@@ -1,0 +1,179 @@
+#ifndef SENSORES_CPP
+#define SENSORES_CPP
+
+
+#include "Sensores.h"
+#include "Configuracion.h"
+#include "Estado.h"
+
+
+
+/*
+======================================================
+
+                CENTINELA V2
+
+                  SENSORES
+
+  Archivo:
+  Sensores.cpp
+
+
+======================================================
+*/
+
+
+
+void Sensores::iniciar()
+{
+
+    pinMode(TRIG_RADAR, OUTPUT);
+    pinMode(ECHO_RADAR, INPUT);
+
+
+    pinMode(TRIG_FRONTAL, OUTPUT);
+    pinMode(ECHO_FRONTAL, INPUT);
+
+
+    pinMode(TRIG_SUELO, OUTPUT);
+    pinMode(ECHO_SUELO, INPUT);
+
+
+
+    digitalWrite(TRIG_RADAR, LOW);
+    digitalWrite(TRIG_FRONTAL, LOW);
+    digitalWrite(TRIG_SUELO, LOW);
+
+
+}
+
+
+
+
+void Sensores::actualizar()
+{
+
+    // Sensor frontal
+    Estado.sensores.distanciaFrontal =
+        filtrarLectura(
+            TRIG_FRONTAL,
+            ECHO_FRONTAL
+        );
+
+
+
+    // Sensor suelo
+    Estado.sensores.distanciaSuelo =
+        filtrarLectura(
+            TRIG_SUELO,
+            ECHO_SUELO
+        );
+
+
+
+    // Radar será controlado por Radar.cpp
+    // solamente dejamos preparada la lectura
+
+
+
+    if(DEBUG_SENSORES)
+    {
+
+        Serial.print("Frontal: ");
+
+        Serial.print(
+            Estado.sensores.distanciaFrontal
+        );
+
+
+        Serial.print(" cm  Suelo: ");
+
+
+        Serial.println(
+            Estado.sensores.distanciaSuelo
+        );
+
+    }
+
+}
+
+
+
+
+
+uint16_t Sensores::leerDistancia(
+    uint8_t trig,
+    uint8_t echo
+)
+{
+
+
+    digitalWrite(trig, LOW);
+
+    delayMicroseconds(2);
+
+
+    digitalWrite(trig, HIGH);
+
+    delayMicroseconds(10);
+
+
+    digitalWrite(trig, LOW);
+
+
+
+    unsigned long tiempo = pulseIn(
+        echo,
+        HIGH,
+        30000
+    );
+
+
+
+    if(tiempo == 0)
+    {
+        return DISTANCIA_MAXIMA;
+    }
+
+
+
+    uint16_t distancia =
+        tiempo * 0.0343 / 2;
+
+
+
+    return distancia;
+
+}
+
+
+
+
+
+uint16_t Sensores::filtrarLectura(
+    uint8_t trig,
+    uint8_t echo
+)
+{
+
+    uint32_t suma = 0;
+
+
+    for(uint8_t i = 0; i < 3; i++)
+    {
+
+        suma += leerDistancia(
+            trig,
+            echo
+        );
+
+    }
+
+
+    return suma / 3;
+
+}
+
+
+
+#endif
