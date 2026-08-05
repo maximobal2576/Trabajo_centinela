@@ -1,0 +1,1 @@
+esta carpeta desarrollar el codigo completo de la aplicacion centinela complemento del producto centinela a fin de expandir sus capacidades, todo esta dispuesto por modulos que realizan actividades en especifico
