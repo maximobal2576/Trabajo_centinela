@@ -8,7 +8,7 @@
 Servo servoRadar;
 
 
-int anguloRadar = 45;
+int anguloRadar = RADAR_IZQUIERDA;
 
 
 
@@ -56,7 +56,7 @@ int medirRadar()
 
 
 
-    for(int i = 0; i < 5; i++)
+    for(int i = 0; i < RADAR_MEDICIONES; i++)
     {
 
 
@@ -155,7 +155,7 @@ void Radar::actualizar()
 
     // esperar estabilización
 
-    delay(100);
+    delay(RADAR_SETTLE_MS);
 
 
 
@@ -206,6 +206,8 @@ void Radar::actualizar()
         Estado::sensores.radarDerecha = distancia;
 
     }
+
+    Estado::sensores.anguloRadar = anguloRadar;
 
 
 

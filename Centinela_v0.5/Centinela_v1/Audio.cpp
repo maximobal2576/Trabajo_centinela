@@ -54,22 +54,28 @@ void Audio::iniciar()
 void Audio::actualizar()
 {
 
+    static unsigned long tiempoUltimoAudio = 0;
 
-    if(
-        Estado::salida.reproducirAudio
-    )
+    if(Estado::salida.reproducirAudio && !Estado::sistema.audioOcupado)
     {
-
-
         reproducir(
             Estado::salida.audioID
         );
 
-
+        Estado::sistema.audioPendienteID = Estado::salida.audioID;
+        Estado::sistema.audioOcupado = true;
+        tiempoUltimoAudio = millis();
         Estado::salida.reproducirAudio = false;
-
     }
 
+    if(Estado::sistema.audioOcupado)
+    {
+        if(millis() - tiempoUltimoAudio >= AUDIO_TIMEOUT_MS)
+        {
+            Estado::sistema.audioOcupado = false;
+            Estado::sistema.audioPendienteID = 0;
+        }
+    }
 
 }
 

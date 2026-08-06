@@ -24,28 +24,39 @@ void Bateria::iniciar()
 void Bateria::actualizar()
 {
 
+    static int lecturaSuavizada = 0;
 
-    int lectura =
-    analogRead(PIN_BATERIA);
+    int lectura = analogRead(PIN_BATERIA);
 
-
-
-    Estado::sistema.bateria =
-    calcularPorcentaje(lectura);
-
-
-
-    if(
-        Estado::sistema.bateria < 15
-    )
+    if(lecturaSuavizada == 0)
     {
-
-        Estado::sistema.eventoActual =
-        EVENTO_BATERIA_BAJA;
-
+        lecturaSuavizada = lectura;
+    }
+    else
+    {
+        lecturaSuavizada =
+            (lecturaSuavizada * 7 + lectura) / 8;
     }
 
+    Estado::sistema.bateria =
+    calcularPorcentaje(lecturaSuavizada);
 
+    if(Estado::sistema.bateria < BATERIA_UMBRAL_BAJA)
+    {
+        Estado::sistema.eventoActual =
+        EVENTO_BATERIA_BAJA;
+        Estado::sistema.prioridadActual = PRIORIDAD_ALTA;
+        Estado::sistema.direccion = DIRECCION_NINGUNA;
+    }
+    else if(Estado::sistema.bateria >= BATERIA_UMBRAL_RECUPERACION)
+    {
+        if(Estado::sistema.eventoActual == EVENTO_BATERIA_BAJA)
+        {
+            Estado::sistema.eventoActual =
+            EVENTO_NORMAL;
+            Estado::sistema.prioridadActual = PRIORIDAD_BAJA;
+        }
+    }
 
 }
 

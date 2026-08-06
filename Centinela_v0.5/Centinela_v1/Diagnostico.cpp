@@ -26,18 +26,20 @@ void Diagnostico::iniciar()
 void Diagnostico::actualizar()
 {
 
-
     if(!MODO_DIAGNOSTICO)
     {
-
         return;
-
     }
 
+    static unsigned long ultimoDiagnostico = 0;
 
+    if(millis() - ultimoDiagnostico < TIEMPO_DIAGNOSTICO)
+    {
+        return;
+    }
 
+    ultimoDiagnostico = millis();
     imprimirEstado();
-
 
 }
 
@@ -80,6 +82,13 @@ void Diagnostico::imprimirEstado()
     Serial.println(" cm");
 
 
+    Serial.print("Ángulo Radar: ");
+
+    Serial.println(
+        Estado::sensores.anguloRadar
+    );
+
+
 
     Serial.print("Radar Centro: ");
 
@@ -105,6 +114,26 @@ void Diagnostico::imprimirEstado()
 
     Serial.println(
         Estado::sistema.eventoActual
+    );
+
+    Serial.print("Dirección: ");
+
+    Serial.println(
+        Estado::sistema.direccion
+    );
+
+    Serial.print("Batería: ");
+
+    Serial.print(
+        Estado::sistema.bateria
+    );
+
+    Serial.println(" %");
+
+    Serial.print("Bluetooth: ");
+
+    Serial.println(
+        Estado::sistema.bluetoothConectado ? 1 : 0
     );
 
 

@@ -46,20 +46,12 @@ void Sensores::actualizar()
         leerDistancia(TRIG_FRONTAL, ECHO_FRONTAL);
 
 
-
     Estado::sensores.suelo =
         leerDistancia(TRIG_SUELO, ECHO_SUELO);
 
 
-
-    // Radar temporalmente en centro
-    // Luego será controlado por Radar.cpp
-
-    Estado::sensores.radarCentro =
-        leerDistancia(TRIG_RADAR, ECHO_RADAR);
-
-
-
+    // Radar inferior controlado desde Radar.cpp para mantener una sola
+    // responsabilidad y evitar mediciones cruzadas.
 }
 
 

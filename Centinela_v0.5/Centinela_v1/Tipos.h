@@ -71,7 +71,11 @@ enum Direccion
 
     DIRECCION_IZQUIERDA,
 
+    DIRECCION_DIAGONAL_IZQUIERDA,
+
     DIRECCION_CENTRO,
+
+    DIRECCION_DIAGONAL_DERECHA,
 
     DIRECCION_DERECHA,
 
@@ -172,6 +176,8 @@ struct DatosSistema
     bool bluetoothConectado;
 
     bool audioOcupado;
+
+    int audioPendienteID;
 };
 
 

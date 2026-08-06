@@ -34,6 +34,8 @@ void Estado::iniciar()
 
     sensores.radarDerecha = 400;
 
+    sensores.anguloRadar = RADAR_IZQUIERDA;
+
 
     sensores.inclinacionX = 0;
 
@@ -76,11 +78,13 @@ void Estado::iniciar()
     sistema.direccion = DIRECCION_NINGUNA;
 
 
-    sistema.bateria = 0;
+    sistema.bateria = 100;
 
     sistema.bluetoothConectado = false;
 
     sistema.audioOcupado = false;
+
+    sistema.audioPendienteID = 0;
 
 
 

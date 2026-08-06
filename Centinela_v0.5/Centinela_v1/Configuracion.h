@@ -136,6 +136,8 @@
 
 #define TIEMPO_AUDIO 100
 
+#define AUDIO_TIMEOUT_MS 2500
+
 #define TIEMPO_BATERIA 5000
 
 
@@ -146,6 +148,11 @@
 
 #define PIN_BATERIA A0
 
+#define BATERIA_MUESTRAS 6
+
+#define BATERIA_UMBRAL_BAJA 15
+
+#define BATERIA_UMBRAL_RECUPERACION 18
 
 
 // =====================================================
@@ -154,6 +161,16 @@
 
 #define MODO_DIAGNOSTICO true
 
+#define TIEMPO_DIAGNOSTICO 1000
+
+
+// =====================================================
+// RADAR
+// =====================================================
+
+#define RADAR_SETTLE_MS 60
+
+#define RADAR_MEDICIONES 3
 
 
 #endif

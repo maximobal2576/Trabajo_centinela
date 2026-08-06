@@ -94,41 +94,47 @@ void Salida::actualizarBuzzer()
 
     static bool buzzerActivo = false;
 
+    unsigned long periodo = 0;
 
 
     if(Estado::sistema.eventoActual == EVENTO_CAIDA)
     {
 
+        periodo = 300;
+    }
+    else if(Estado::sistema.eventoActual == EVENTO_BATERIA_BAJA)
+    {
 
-        if(millis() - tiempoBuzzer >= 300)
+        periodo = 700;
+    }
+    else if(Estado::sistema.eventoActual == EVENTO_ERROR)
+    {
+
+        periodo = 500;
+    }
+
+    if(periodo > 0)
+    {
+        if(millis() - tiempoBuzzer >= periodo)
         {
-
             tiempoBuzzer = millis();
 
-
             buzzerActivo = !buzzerActivo;
-
 
             digitalWrite(
                 BUZZER_PIN,
                 buzzerActivo
             );
-
         }
-
-
     }
     else
     {
-
         buzzerActivo = false;
-
 
         digitalWrite(
             BUZZER_PIN,
             LOW
         );
-
     }
 
 }

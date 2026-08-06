@@ -38,12 +38,17 @@ void Decision::actualizar()
     Estado::salida.motorFrontal = 0;
 
 
-    // Limpiar evento anterior
+    // Limpiar evento anterior si no hay condición crítica activa
     if(!Estado::sensores.caidaDetectada)
-{
-    Estado::sistema.eventoActual = EVENTO_NORMAL;
-    Estado::sistema.prioridadActual = PRIORIDAD_BAJA;
-}
+    {
+        if(Estado::sistema.eventoActual != EVENTO_BATERIA_BAJA &&
+           Estado::sistema.eventoActual != EVENTO_ERROR)
+        {
+            Estado::sistema.eventoActual = EVENTO_NORMAL;
+            Estado::sistema.prioridadActual = PRIORIDAD_BAJA;
+            Estado::sistema.direccion = DIRECCION_NINGUNA;
+        }
+    }
 
     // Orden de prioridades
 
@@ -67,6 +72,33 @@ void Decision::actualizar()
 
     }
 
+
+    if(Estado::sistema.estado != SISTEMA_DIAGNOSTICO &&
+       Estado::sistema.estado != SISTEMA_ERROR)
+    {
+        if(Estado::sistema.eventoActual == EVENTO_CAIDA)
+        {
+            Estado::sistema.estado = SISTEMA_CAIDA;
+        }
+        else if(Estado::sistema.eventoActual == EVENTO_POZO)
+        {
+            Estado::sistema.estado = SISTEMA_POZO;
+        }
+        else if(Estado::sistema.eventoActual == EVENTO_BATERIA_BAJA ||
+                Estado::sistema.eventoActual == EVENTO_OBSTACULO_FRONTAL ||
+                Estado::sistema.eventoActual == EVENTO_OBSTACULO_RADAR)
+        {
+            Estado::sistema.estado = SISTEMA_ALERTA;
+        }
+        else if(Estado::sistema.eventoActual == EVENTO_ERROR)
+        {
+            Estado::sistema.estado = SISTEMA_ERROR;
+        }
+        else
+        {
+            Estado::sistema.estado = SISTEMA_NORMAL;
+        }
+    }
 
 
 }
@@ -102,6 +134,8 @@ void Decision::analizarCaida()
 
             Estado::sistema.prioridadActual = PRIORIDAD_CRITICA;
 
+            Estado::sistema.direccion = DIRECCION_SUELO;
+
 
             Estado::salida.reproducirAudio = true;
 
@@ -136,6 +170,7 @@ void Decision::analizarSuelo()
 
         Estado::sistema.prioridadActual = PRIORIDAD_ALTA;
 
+        Estado::sistema.direccion = DIRECCION_SUELO;
 
 
         Estado::salida.motorIzquierdo = PWM_POZO;
@@ -177,54 +212,77 @@ void Decision::analizarObstaculos()
         Estado::sistema.eventoActual =
         EVENTO_OBSTACULO_FRONTAL;
 
+        Estado::sistema.direccion = DIRECCION_FRONTAL;
+
     }
 
 
 
-    if(Estado::sensores.radarIzquierda <= DISTANCIA_ALERTA_MAX)
-    {
+    bool radarIzquierda =
+        Estado::sensores.radarIzquierda <= DISTANCIA_ALERTA_MAX;
 
+    bool radarCentro =
+        Estado::sensores.radarCentro <= DISTANCIA_ALERTA_MAX;
+
+    bool radarDerecha =
+        Estado::sensores.radarDerecha <= DISTANCIA_ALERTA_MAX;
+
+
+    if (radarIzquierda && radarCentro)
+    {
         Estado::salida.motorIzquierdo =
-        calcularIntensidad(
-        Estado::sensores.radarIzquierda);
-
-
-
-        Estado::sistema.eventoActual =
-        EVENTO_OBSTACULO_RADAR;
-
-    }
-
-
-
-    if(Estado::sensores.radarCentro <= DISTANCIA_ALERTA_MAX)
-    {
+            calcularIntensidad(Estado::sensores.radarIzquierda);
 
         Estado::salida.motorCentro =
-        calcularIntensidad(
-        Estado::sensores.radarCentro);
-
-
+            calcularIntensidad(Estado::sensores.radarCentro);
 
         Estado::sistema.eventoActual =
-        EVENTO_OBSTACULO_RADAR;
-
+            EVENTO_OBSTACULO_RADAR;
+        Estado::sistema.direccion = DIRECCION_DIAGONAL_IZQUIERDA;
     }
-
-
-
-    if(Estado::sensores.radarDerecha <= DISTANCIA_ALERTA_MAX)
+    else if (radarCentro && radarDerecha)
     {
+        Estado::salida.motorCentro =
+            calcularIntensidad(Estado::sensores.radarCentro);
 
         Estado::salida.motorDerecho =
-        calcularIntensidad(
-        Estado::sensores.radarDerecha);
-
-
+            calcularIntensidad(Estado::sensores.radarDerecha);
 
         Estado::sistema.eventoActual =
-        EVENTO_OBSTACULO_RADAR;
+            EVENTO_OBSTACULO_RADAR;
+        Estado::sistema.direccion = DIRECCION_DIAGONAL_DERECHA;
+    }
+    else
+    {
+        if (radarIzquierda)
+        {
+            Estado::salida.motorIzquierdo =
+                calcularIntensidad(Estado::sensores.radarIzquierda);
 
+            Estado::sistema.eventoActual =
+                EVENTO_OBSTACULO_RADAR;
+            Estado::sistema.direccion = DIRECCION_IZQUIERDA;
+        }
+
+        if (radarCentro)
+        {
+            Estado::salida.motorCentro =
+                calcularIntensidad(Estado::sensores.radarCentro);
+
+            Estado::sistema.eventoActual =
+                EVENTO_OBSTACULO_RADAR;
+            Estado::sistema.direccion = DIRECCION_CENTRO;
+        }
+
+        if (radarDerecha)
+        {
+            Estado::salida.motorDerecho =
+                calcularIntensidad(Estado::sensores.radarDerecha);
+
+            Estado::sistema.eventoActual =
+                EVENTO_OBSTACULO_RADAR;
+            Estado::sistema.direccion = DIRECCION_DERECHA;
+        }
     }
 
 
