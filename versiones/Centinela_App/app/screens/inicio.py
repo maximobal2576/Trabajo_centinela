@@ -46,7 +46,7 @@ class InicioScreen(MDBoxLayout):
         self.add_widget(self.bateria_label)
 
         self.gps = MDLabel(
-            text="📍 GPS: Inactivo",
+            text="GPS: Inactivo",
             halign="center",
             font_name="EmojiFont"
         )
