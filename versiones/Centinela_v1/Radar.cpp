@@ -129,24 +129,6 @@ int medirRadar()
 void Radar::actualizar()
 {
 
-
-    static unsigned long tiempo = 0;
-
-
-
-    // velocidad del barrido
-
-    if(millis() - tiempo < 200)
-    {
-        return;
-    }
-
-
-
-    tiempo = millis();
-
-
-
     // mover servo
 
     servoRadar.write(anguloRadar);
@@ -192,7 +174,7 @@ void Radar::actualizar()
     }
 
 
-    else if(anguloRadar <=105)
+    else if(anguloRadar <= 105)
     {
 
         Estado::sensores.radarCentro = distancia;
@@ -234,14 +216,14 @@ void Radar::actualizar()
     // avanzar servo
 
 
-    anguloRadar += 10;
+    anguloRadar += RADAR_PASO;
 
 
 
-    if(anguloRadar > 135)
+    if(anguloRadar > RADAR_DERECHA)
     {
 
-        anguloRadar = 45;
+        anguloRadar = RADAR_IZQUIERDA;
 
     }
 

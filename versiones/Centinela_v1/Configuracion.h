@@ -124,7 +124,7 @@
 
 #define TIEMPO_SENSORES 50
 
-#define TIEMPO_RADAR 100
+#define TIEMPO_RADAR 150
 
 #define TIEMPO_MOVIMIENTO 20
 
@@ -168,7 +168,9 @@
 // RADAR
 // =====================================================
 
-#define RADAR_SETTLE_MS 60
+#define RADAR_PASO 5
+
+#define RADAR_SETTLE_MS 100
 
 #define RADAR_MEDICIONES 3
 

@@ -65,7 +65,8 @@ void Decision::actualizar()
 
 
 
-    if(Estado::sistema.eventoActual == EVENTO_NORMAL)
+    if(Estado::sistema.eventoActual == EVENTO_NORMAL ||
+       Estado::sistema.eventoActual == EVENTO_POZO)
     {
 
         analizarObstaculos();
@@ -99,7 +100,6 @@ void Decision::actualizar()
             Estado::sistema.estado = SISTEMA_NORMAL;
         }
     }
-
 
 }
 
@@ -195,6 +195,9 @@ void Decision::analizarObstaculos()
 
     int intensidad;
 
+    bool pozoActivo =
+        Estado::sistema.eventoActual == EVENTO_POZO;
+
 
 
     if(Estado::sensores.frontal <= DISTANCIA_ALERTA_MAX)
@@ -209,10 +212,13 @@ void Decision::analizarObstaculos()
 
 
 
-        Estado::sistema.eventoActual =
-        EVENTO_OBSTACULO_FRONTAL;
+        if(!pozoActivo)
+        {
+            Estado::sistema.eventoActual =
+            EVENTO_OBSTACULO_FRONTAL;
 
-        Estado::sistema.direccion = DIRECCION_FRONTAL;
+            Estado::sistema.direccion = DIRECCION_FRONTAL;
+        }
 
     }
 
@@ -283,6 +289,29 @@ void Decision::analizarObstaculos()
                 EVENTO_OBSTACULO_RADAR;
             Estado::sistema.direccion = DIRECCION_DERECHA;
         }
+    }
+
+
+    if(pozoActivo)
+    {
+        if(Estado::salida.motorIzquierdo < PWM_POZO)
+        {
+            Estado::salida.motorIzquierdo = PWM_POZO;
+        }
+
+        if(Estado::salida.motorCentro < PWM_POZO)
+        {
+            Estado::salida.motorCentro = PWM_POZO;
+        }
+
+        if(Estado::salida.motorDerecho < PWM_POZO)
+        {
+            Estado::salida.motorDerecho = PWM_POZO;
+        }
+
+        Estado::sistema.eventoActual = EVENTO_POZO;
+        Estado::sistema.prioridadActual = PRIORIDAD_ALTA;
+        Estado::sistema.direccion = DIRECCION_SUELO;
     }
 
 

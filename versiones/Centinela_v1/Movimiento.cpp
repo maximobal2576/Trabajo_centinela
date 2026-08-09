@@ -16,6 +16,8 @@
 
 
 float Movimiento::aceleracionAnterior = 0;
+unsigned long tiempoCaidaInicio_v1 = 0;
+const unsigned long TIEMPO_RECUPERACION_CAIDA_V1 = 5000;
 
 
 
@@ -106,8 +108,26 @@ void Movimiento::actualizar()
 
 
 
-        Estado::sensores.caidaDetectada =
-        detectarCaida();
+        // Gestión con estado para evitar bloqueo permanente:
+        bool detectada = detectarCaida();
+
+        if(detectada && !Estado::sensores.caidaDetectada)
+        {
+            Estado::sensores.caidaDetectada = true;
+            tiempoCaidaInicio_v1 = millis();
+        }
+        else if(Estado::sensores.caidaDetectada)
+        {
+            // Si las lecturas vuelven a valores cercanos a 1G y hay
+            // movimiento o ha pasado el tiempo de recuperación, limpiar.
+            bool inclinacionNormal = (modulo > 0.8 && modulo < 1.2);
+
+            if(inclinacionNormal && (Estado::sensores.movimientoDetectado || (millis() - tiempoCaidaInicio_v1 > TIEMPO_RECUPERACION_CAIDA_V1)))
+            {
+                Estado::sensores.caidaDetectada = false;
+                tiempoCaidaInicio_v1 = 0;
+            }
+        }
 
 
 

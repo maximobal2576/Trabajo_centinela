@@ -13,6 +13,9 @@ namespace MPU6050_Module
 {
 
 
+                // Set the state to MPU_CAIDA and mark the fall detected
+                tiempoCaidaInicio = millis();
+                Estado::sensores.caidaDetectada = true;
 //------------------------------------------------------
 // Objeto MPU
 //------------------------------------------------------
@@ -51,6 +54,8 @@ unsigned long tiempoGolpe = 0;
 
 unsigned long tiempoConfirmacion = 0;
 
+unsigned long tiempoCaidaInicio = 0;
+
 
 
 
@@ -69,6 +74,7 @@ const float UMBRAL_GIRO = 160.0;
 const unsigned long ESPERA_GOLPE = 200;
 
 const unsigned long TIEMPO_MAX_CONFIRMACION = 2500;
+const unsigned long TIEMPO_RECUPERACION_CAIDA = 5000;
 
 
 
@@ -81,6 +87,24 @@ void iniciar()
 {
 
     Wire.begin();
+            // Intentar detectar recuperación: si hay movimiento fuerte
+            // o han pasado unos segundos desde la caída y las inclinaciones
+            // vuelven a valores razonables, reiniciamos el detector.
+
+            if(tiempoCaidaInicio == 0)
+            {
+                tiempoCaidaInicio = millis();
+            }
+
+            bool movimientoRecuperacion = (giroFiltro > UMBRAL_GIRO);
+            bool angulosNormales = (abs(pitch) < (UMBRAL_ANGULO / 2) && abs(roll) < (UMBRAL_ANGULO / 2));
+
+            if(movimientoRecuperacion || (millis() - tiempoCaidaInicio > TIEMPO_RECUPERACION_CAIDA && angulosNormales))
+            {
+                estado = MPU_NORMAL;
+                Estado::sensores.caidaDetectada = false;
+                tiempoCaidaInicio = 0;
+            }
 
 
     mpu.begin();
