@@ -1,158 +1,267 @@
 from kivy.clock import Clock
+from kivy.graphics import Color, Rectangle
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDRaisedButton
+from kivy.uix.image import Image
+from kivy.core.image import Image as CoreImage
 
 from services.bluetooth import BluetoothService
 
+
 class InicioScreen(MDBoxLayout):
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = 20
-        self.spacing = 16
+        self.padding = [30, 35, 30, 20]
+        self.spacing = 15
+
+        # ============================================================
+        # FONDO
+        # ============================================================
+
+        # ============================================================
+# FONDO
+# ============================================================
+
+        with self.canvas.before:
+
+            # Fondo oscuro
+            Color(0.01, 0.03, 0.04, 1)
+
+            self.fondo = Rectangle(
+                pos=self.pos,
+                size=self.size
+            )
+
+            # Capa verde
+            Color(0.00, 0.20, 0.12, 0.35)
+
+            self.fondo_verde = Rectangle(
+                pos=self.pos,
+                size=self.size
+            )
+
+            # Logo grande de fondo
+            logo_texture = CoreImage(
+                "assets/images/logo_centinela.png"
+            ).texture
+
+            Color(1, 1, 1, 0.08)
+
+            self.logo_fondo = Rectangle(
+                texture=logo_texture,
+                size=(400, 400),
+                pos=(0, 0)
+            )
+
+        self.bind(
+            pos=self._actualizar_fondo,
+            size=self._actualizar_fondo
+        )
+        # ============================================================
+        # BLUETOOTH
+        # ============================================================
 
         self.bluetooth_service = BluetoothService()
 
-        self.titulo = MDLabel(
-            text="Centinela",
-            halign="center",
-            font_style="H4",
+        # ============================================================
+        # TÍTULO
+        # ============================================================
+
+        self.logo = Image(
+            source="assets/images/logo_centinela.png",
+            size_hint_y=None,
+            height=220,
+            allow_stretch=True,
+            keep_ratio=True,
         )
-        self.add_widget(self.titulo)
+
+        self.add_widget(self.logo)
+
+        # ============================================================
+        # SUBTÍTULO
+        # ============================================================
+
+        # ============================================================
+        # ESPACIO VISUAL PARA EL BASTÓN
+        # ============================================================
+
+        self.ilustracion = Image(
+            source="assets/images/baston_centinela.png",
+            size_hint_y=0.8,
+            allow_stretch=True,
+            keep_ratio=True,
+        )
+
+        self.add_widget(self.ilustracion)
+
+
+        # ============================================================
+        # ESTADO DEL BASTÓN
+        # ============================================================
 
         self.estado_baston = MDLabel(
-            text="Bastón: Desconectado",
-            halign="center",
-        )
-        self.add_widget(self.estado_baston)
-
-        self.bateria_label = MDLabel(
-            text="Batería: --%",
+            text="BASTÓN DESCONECTADO",
             halign="center",
             theme_text_color="Custom",
-            text_color=(0.1, 0.7, 0.2, 1)
+            text_color=(1.0, 0.35, 0.35, 1),
+            size_hint_y=None,
+            height=40,
+         )
+
+        self.add_widget(self.estado_baston)
+
+        # ============================================================
+        # BATERÍA
+        # ============================================================
+
+        self.bateria_label = MDLabel(
+            text="Batería: -- %",
+            halign="center",
+            font_style="H5",
+            theme_text_color="Custom",
+            text_color=(0.30, 1.0, 0.55, 1),
+            size_hint_y=None,
+            height=55,
         )
+
         self.add_widget(self.bateria_label)
 
-        self.estado_sistema = MDLabel(
-            text="Sistema: Sin datos",
-            halign="center",
-        )
-        self.add_widget(self.estado_sistema)
-
-        self.evento_label = MDLabel(
-            text="Evento: Sin datos",
-            halign="center",
-        )
-        self.add_widget(self.evento_label)
-
-        self.direccion_label = MDLabel(
-            text="Dirección: Sin datos",
-            halign="center",
-        )
-        self.add_widget(self.direccion_label)
-
-        self.boton_conectar = MDRaisedButton(
-            text="Conectar bastón",
-            md_bg_color=(0.1, 0.5, 0.9, 1),
-            pos_hint={"center_x": 0.5},
-        )
-        self.boton_conectar.bind(on_release=self.alternar_conexion)
-        self.add_widget(self.boton_conectar)
-
-        self.conexion_label = MDLabel(
-            text="Estado de conexión: Desconectado",
-            halign="center",
-        )
-        self.add_widget(self.conexion_label)
+        # ============================================================
+        # NAVEGACIÓN
+        # ============================================================
 
         self.boton_navegar = MDRaisedButton(
-            text="Ir a navegación \n 🗺️",
-            md_bg_color=(0.0, 0.6, 0.2, 1),
+            text="NAVEGACIÓN",
             pos_hint={"center_x": 0.5},
+            size_hint=(0.85, None),
+            height=60,
+            md_bg_color=(0.05, 0.70, 0.30, 1),
         )
-        self.boton_navegar.bind(on_release=self.ir_a_gps)
+
+        self.boton_navegar.bind(
+            on_release=self.ir_a_gps
+        )
+
         self.add_widget(self.boton_navegar)
 
-        Clock.schedule_interval(self.actualizar_estado, 0.5)
+        # ============================================================
+        # CONEXIÓN
+        # ============================================================
+
+        self.boton_conectar = MDRaisedButton(
+            text="CONECTAR BASTÓN",
+            pos_hint={"center_x": 0.5},
+            size_hint=(0.70, None),
+            height=48,
+            md_bg_color=(0.08, 0.25, 0.28, 1),
+        )
+
+        self.boton_conectar.bind(
+            on_release=self.alternar_conexion
+        )
+
+        self.add_widget(self.boton_conectar)
+
+        # ============================================================
+        # ACTUALIZACIÓN
+        # ============================================================
+
+        Clock.schedule_interval(
+            self.actualizar_estado,
+            0.5
+        )
+
+    # ================================================================
+    # ACTUALIZAR FONDO
+    # ================================================================
+    def _actualizar_fondo(self, *args):
+
+    # Fondo principal
+        self.fondo.pos = self.pos
+        self.fondo.size = self.size
+
+        # Capa verde
+        self.fondo_verde.pos = self.pos
+        self.fondo_verde.size = self.size
+
+        # Logo de fondo
+        tamaño = min(self.width, self.height) * 0.85
+
+        self.logo_fondo.size = (
+            tamaño,
+            tamaño
+        )
+
+        self.logo_fondo.pos = (
+            self.center_x - tamaño / 2,
+            self.center_y - tamaño / 2
+        )
+    
+    # ================================================================
+    # ACTUALIZAR DATOS
+    # ================================================================
 
     def actualizar_estado(self, dt):
+
         self.bluetooth_service.update(dt)
-        self.estado_baston.text = (
-            "Bastón: Conectado" if self.bluetooth_service.connected else "Bastón: Desconectado"
-        )
-        self.bateria_label.text = f"Batería: {self.bluetooth_service.state.get('BATERIA', '--')}%"
-        self.estado_sistema.text = (
-            f"Sistema: {self._nombre_estado(self.bluetooth_service.state.get('ESTADO'))}"
-        )
-        self.evento_label.text = (
-            f"Evento: {self._nombre_evento(self.bluetooth_service.state.get('EVENTO'))}"
-        )
-        self.direccion_label.text = (
-            f"Dirección: {self._nombre_direccion(self.bluetooth_service.state.get('DIRECCION'))}"
-        )
 
         if self.bluetooth_service.connected:
-            self.boton_conectar.text = "Desconectar bastón"
-            self.conexion_label.text = "Estado de conexión: Conectado"
-        else:
-            self.boton_conectar.text = "Conectar bastón"
-            self.conexion_label.text = (
-                self.bluetooth_service.last_error or "Estado de conexión: Desconectado"
+
+            self.estado_baston.text = "BASTÓN CONECTADO"
+            self.estado_baston.text_color = (
+                0.30,
+                1.0,
+                0.50,
+                1
             )
 
+            self.boton_conectar.text = "DESCONECTAR BASTÓN"
+
+        else:
+
+            self.estado_baston.text = "BASTÓN DESCONECTADO"
+            self.estado_baston.text_color = (
+                1.0,
+                0.35,
+                0.35,
+                1
+            )
+
+            self.boton_conectar.text = "CONECTAR BASTÓN"
+
+        bateria = self.bluetooth_service.state.get(
+            "BATERIA",
+            "--"
+        )
+
+        self.bateria_label.text = f"Batería: {bateria} %"
+
+    # ================================================================
+    # CONECTAR / DESCONECTAR
+    # ================================================================
+
     def alternar_conexion(self, instance):
+
         if self.bluetooth_service.connected:
             self.bluetooth_service.disconnect()
+
         else:
             self.bluetooth_service.connect()
 
         self.actualizar_estado(0)
 
-    @staticmethod
-    def _nombre_estado(valor):
-        estados = {
-            "0": "Inicio",
-            "1": "Normal",
-            "2": "Alerta",
-            "3": "Pozo",
-            "4": "Caída",
-            "5": "Diagnóstico",
-            "6": "Error",
-        }
-        return estados.get(str(valor), "Sin datos")
-
-    @staticmethod
-    def _nombre_evento(valor):
-        eventos = {
-            "0": "Normal",
-            "1": "Obstáculo frontal",
-            "2": "Obstáculo de radar",
-            "3": "Pozo",
-            "4": "Caída",
-            "5": "Batería baja",
-            "6": "Error",
-        }
-        return eventos.get(str(valor), "Sin datos")
-
-    @staticmethod
-    def _nombre_direccion(valor):
-        direcciones = {
-            "0": "Ninguna",
-            "1": "Izquierda",
-            "2": "Diagonal izquierda",
-            "3": "Centro",
-            "4": "Diagonal derecha",
-            "5": "Derecha",
-            "6": "Frontal",
-            "7": "Suelo",
-        }
-        return direcciones.get(str(valor), "Sin datos")
+    # ================================================================
+    # IR A NAVEGACIÓN
+    # ================================================================
 
     def ir_a_gps(self, instance):
+
         app = MDApp.get_running_app()
+
         if hasattr(app, "switch_screen"):
             app.switch_screen("navegacion")

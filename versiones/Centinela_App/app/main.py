@@ -2,7 +2,6 @@
 from kivymd.app import MDApp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
-
 from screens.inicio import InicioScreen
 from screens.estado import EstadoScreen
 from screens.navegacion import NavegacionScreen
@@ -10,6 +9,7 @@ from screens.emergencia import EmergenciaScreen
 from screens.configuracion import ConfiguracionScreen
 from screens.rutas import RutasScreen
 from widgets.menu_inferior import MenuInferior
+
 
 
 class CentinelaApp(MDApp):
