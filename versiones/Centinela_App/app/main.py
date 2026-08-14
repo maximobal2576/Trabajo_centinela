@@ -12,6 +12,7 @@ from screens.rutas import RutasScreen
 from widgets.menu_inferior import MenuInferior
 from components.fondo_centinela import FondoCentinela
 
+
 class CentinelaApp(MDApp):
 
     def build(self):
@@ -27,7 +28,7 @@ class CentinelaApp(MDApp):
         root = FloatLayout()
 
         # ============================================================
-        # FONDO GLOBAL
+        # FONDO
         # ============================================================
 
         fondo = FondoCentinela(
@@ -38,7 +39,7 @@ class CentinelaApp(MDApp):
         root.add_widget(fondo)
 
         # ============================================================
-        # GESTOR DE PANTALLAS
+        # PANTALLAS
         # ============================================================
 
         self.sm = ScreenManager(
@@ -61,7 +62,34 @@ class CentinelaApp(MDApp):
 
         menu = MenuInferior()
 
+        # IMPORTANTE:
+        # No usamos size_hint_x.
+        menu.size_hint_x = None
+        menu.size_hint_y = None
+
+        menu.height = 70
+        menu.width = root.width * 0.96
+
+        menu.y = 0
+        menu.x = (root.width - menu.width) / 2
+
         root.add_widget(menu)
+
+        # ============================================================
+        # MANTENER MENÚ CENTRADO AL CAMBIAR TAMAÑO
+        # ============================================================
+
+        def actualizar_menu(*args):
+
+            menu.width = root.width * 0.96
+            menu.x = (root.width - menu.width) / 2
+            menu.y = 0
+
+        root.bind(
+            size=actualizar_menu
+        )
+
+        actualizar_menu()
 
         return root
 
@@ -85,10 +113,9 @@ class CentinelaApp(MDApp):
         if name in self.sm.screen_names:
             self.sm.current = name
 
+
 # ====================================================================
-
-# EJECUTAR APLICACIÓN
-
+# EJECUTAR
 # ====================================================================
 
 if __name__ == "__main__":

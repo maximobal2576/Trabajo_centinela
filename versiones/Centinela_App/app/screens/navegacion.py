@@ -6,6 +6,13 @@ from kivymd.uix.button import MDRaisedButton
 
 from services.gps import UbicacionService
 
+from components.estilos_centinela import (
+    CREMA_CLARO,
+    BORDO,
+    BORDO_OSCURO,
+    VERDE_ESTADO,
+)
+
 
 class NavegacionScreen(MDBoxLayout):
 
@@ -13,7 +20,9 @@ class NavegacionScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = 20
+
+        # Más espacio inferior para que el menú no tape los botones
+        self.padding = [30, 25, 30, 150]
         self.spacing = 16
 
         # =========================
@@ -25,10 +34,12 @@ class NavegacionScreen(MDBoxLayout):
         # TÍTULO
         # =========================
         self.titulo = MDLabel(
-            text="Navegación",
+            text="NAVEGACIÓN",
             halign="center",
             font_style="H4",
             bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO,
             size_hint_y=None,
             height=60
         )
@@ -40,7 +51,9 @@ class NavegacionScreen(MDBoxLayout):
         self.estado_gps = MDLabel(
             text="GPS: Sin iniciar",
             halign="center",
-            bold=True
+            bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO
         )
         self.add_widget(self.estado_gps)
 
@@ -50,7 +63,9 @@ class NavegacionScreen(MDBoxLayout):
         self.latitud = MDLabel(
             text="Latitud: --",
             halign="center",
-            bold=True
+            bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO
         )
         self.add_widget(self.latitud)
 
@@ -60,7 +75,9 @@ class NavegacionScreen(MDBoxLayout):
         self.longitud = MDLabel(
             text="Longitud: --",
             halign="center",
-            bold=True
+            bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO
         )
         self.add_widget(self.longitud)
 
@@ -68,9 +85,13 @@ class NavegacionScreen(MDBoxLayout):
         # BOTÓN INICIAR
         # =========================
         self.boton_iniciar = MDRaisedButton(
-            text="Iniciar ubicación",
+            text="INICIAR UBICACIÓN",
             pos_hint={"center_x": 0.5},
-            md_bg_color=(0.0, 0.6, 0.2, 1)
+            size_hint=(0.85, None),
+            height=55,
+            md_bg_color=BORDO,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO
         )
 
         self.boton_iniciar.bind(
@@ -83,8 +104,13 @@ class NavegacionScreen(MDBoxLayout):
         # BOTÓN DETENER
         # =========================
         self.boton_detener = MDRaisedButton(
-            text="Detener ubicación",
-            pos_hint={"center_x": 0.5}
+            text="DETENER UBICACIÓN",
+            pos_hint={"center_x": 0.5},
+            size_hint=(0.85, None),
+            height=55,
+            md_bg_color=BORDO_OSCURO,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO
         )
 
         self.boton_detener.bind(
@@ -109,6 +135,7 @@ class NavegacionScreen(MDBoxLayout):
             self.gps.iniciar()
 
             self.estado_gps.text = "GPS: Buscando ubicación..."
+            self.estado_gps.text_color = VERDE_ESTADO
 
         except Exception as e:
 
@@ -128,6 +155,8 @@ class NavegacionScreen(MDBoxLayout):
             self.estado_gps.text = (
                 "GPS: Detenido"
             )
+
+            self.estado_gps.text_color = CREMA_CLARO
 
         except Exception:
 
@@ -164,8 +193,10 @@ class NavegacionScreen(MDBoxLayout):
             if lat is not None and lon is not None:
 
                 self.estado_gps.text = (
-                    "GPS: Ubicación disponible"
+                    "GPS: UBICACIÓN DISPONIBLE"
                 )
+
+                self.estado_gps.text_color = VERDE_ESTADO
 
         except Exception:
             pass

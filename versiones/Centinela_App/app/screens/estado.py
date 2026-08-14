@@ -4,6 +4,14 @@ from kivymd.uix.label import MDLabel
 
 from services.bluetooth import BluetoothService
 
+from components.estilos_centinela import (
+    CREMA_CLARO,
+    BORDO,
+    DORADO_APAGADO,
+    VERDE_ESTADO,
+    ROJO_EMERGENCIA,
+)
+
 
 class EstadoScreen(MDBoxLayout):
 
@@ -11,86 +19,126 @@ class EstadoScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = 20
+        self.padding = [30, 25, 30, 90]
         self.spacing = 14
 
         # =========================
         # SERVICIO BLUETOOTH
         # =========================
+
         self.bluetooth_service = BluetoothService()
 
         # =========================
         # TÍTULO
         # =========================
+
         self.titulo = MDLabel(
-            text="Estado del bastón",
+            text="ESTADO DEL BASTÓN",
             halign="center",
             font_style="H4",
-            text_color=(0.1, 0.2, 0.90, 1),
+            bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO,
             size_hint_y=None,
             height=60,
-            bold=True
-
         )
+
         self.add_widget(self.titulo)
 
         # =========================
         # CONEXIÓN
         # =========================
+
         self.conexion = MDLabel(
             text="Conexión: Desconectado",
             halign="center",
-            bold=True
+            font_style="H5",
+            bold=True,
+            theme_text_color="Custom",
+            text_color=ROJO_EMERGENCIA,
+            size_hint_y=None,
+            height=45,
         )
+
         self.add_widget(self.conexion)
 
         # =========================
         # BATERÍA
         # =========================
+
         self.bateria = MDLabel(
             text="Batería: --%",
             halign="center",
-            bold=True
+            font_style="H5",
+            bold=True,
+            theme_text_color="Custom",
+            text_color=DORADO_APAGADO,
+            size_hint_y=None,
+            height=45,
         )
+
         self.add_widget(self.bateria)
 
         # =========================
         # SISTEMA
         # =========================
+
         self.sistema = MDLabel(
             text="Sistema: Sin datos",
             halign="center",
-            bold=True
+            bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO,
+            size_hint_y=None,
+            height=45,
         )
+
         self.add_widget(self.sistema)
 
         # =========================
         # EVENTO
         # =========================
+
         self.evento = MDLabel(
             text="Evento: Sin datos",
             halign="center",
-            bold=True
+            bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO,
+            size_hint_y=None,
+            height=45,
         )
+
         self.add_widget(self.evento)
 
         # =========================
         # DIRECCIÓN
         # =========================
+
         self.direccion = MDLabel(
             text="Dirección: Sin datos",
             halign="center",
-            bold=True
+            bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO,
+            size_hint_y=None,
+            height=45,
         )
+
         self.add_widget(self.direccion)
 
         # =========================
         # ACTUALIZACIÓN
         # =========================
+
         Clock.schedule_interval(
             self.actualizar_estado,
             0.5
         )
+
+    # ==================================================
+    # ACTUALIZAR ESTADO
+    # ==================================================
 
     def actualizar_estado(self, dt):
 
@@ -100,14 +148,31 @@ class EstadoScreen(MDBoxLayout):
         # =========================
         # CONEXIÓN
         # =========================
+
         if self.bluetooth_service.connected:
-            self.conexion.text = "Conexión: Conectado"
+
+            self.conexion.text = (
+                "Conexión: Conectado"
+            )
+
+            self.conexion.text_color = (
+                VERDE_ESTADO
+            )
+
         else:
-            self.conexion.text = "Conexión: Desconectado"
+
+            self.conexion.text = (
+                "Conexión: Desconectado"
+            )
+
+            self.conexion.text_color = (
+                ROJO_EMERGENCIA
+            )
 
         # =========================
         # DATOS DEL BASTÓN
         # =========================
+
         estado = self.bluetooth_service.state.get(
             "ESTADO"
         )
@@ -128,7 +193,10 @@ class EstadoScreen(MDBoxLayout):
         # =========================
         # MOSTRAR DATOS
         # =========================
-        self.bateria.text = f"Batería: {bateria}%"
+
+        self.bateria.text = (
+            f"Batería: {bateria}%"
+        )
 
         self.sistema.text = (
             f"Sistema: {self._nombre_estado(estado)}"
@@ -164,6 +232,10 @@ class EstadoScreen(MDBoxLayout):
             "Sin datos"
         )
 
+    # ==================================================
+    # TRADUCCIÓN DE EVENTOS
+    # ==================================================
+
     @staticmethod
     def _nombre_evento(valor):
 
@@ -181,6 +253,10 @@ class EstadoScreen(MDBoxLayout):
             str(valor),
             "Sin datos"
         )
+
+    # ==================================================
+    # TRADUCCIÓN DE DIRECCIONES
+    # ==================================================
 
     @staticmethod
     def _nombre_direccion(valor):
