@@ -18,7 +18,7 @@ class ConfiguracionScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = [30, 25, 30, 90]
+        self.padding = [30, 5, 70, 90]
         self.spacing = 16
 
         # ==========================================

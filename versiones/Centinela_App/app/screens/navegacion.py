@@ -22,7 +22,7 @@ class NavegacionScreen(MDBoxLayout):
         self.orientation = "vertical"
 
         # Más espacio inferior para que el menú no tape los botones
-        self.padding = [30, 25, 30, 150]
+        self.padding = [30, 5, 70, 150]
         self.spacing = 16
 
         # =========================

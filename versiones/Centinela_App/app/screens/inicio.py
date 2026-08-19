@@ -24,7 +24,7 @@ class InicioScreen(MDBoxLayout):
 
         self.orientation = "vertical"
 
-        self.padding = [30, 25, 30, 90]
+        self.padding = [30, 5, 70, 90]
         self.spacing = 15
 
         self.bluetooth_service = BluetoothService()
