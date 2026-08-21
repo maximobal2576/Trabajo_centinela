@@ -1,11 +1,12 @@
 from kivy.clock import Clock
+from kivy.metrics import dp
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDRaisedButton
 from kivy.uix.image import Image
 
-from services.bluetooth import BluetoothService
+from services.bluetooth import get_bluetooth_service
 
 from components.estilos_centinela import (
     CREMA_CLARO,
@@ -24,10 +25,10 @@ class InicioScreen(MDBoxLayout):
 
         self.orientation = "vertical"
 
-        self.padding = [30, 5, 70, 90]
-        self.spacing = 15
+        self.padding = [dp(20), dp(5), dp(20), dp(88)]
+        self.spacing = dp(12)
 
-        self.bluetooth_service = BluetoothService()
+        self.bluetooth_service = get_bluetooth_service()
 
         # ==========================================
         # ESTADO DEL BASTÓN
@@ -41,7 +42,7 @@ class InicioScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=ROJO_EMERGENCIA,
             size_hint_y=None,
-            height=45,
+            height=dp(44),
         )
 
         self.add_widget(self.estado_baston)
@@ -53,7 +54,7 @@ class InicioScreen(MDBoxLayout):
         self.ilustracion = Image(
             source="assets/images/baston_centinela.png",
             size_hint_y=None,
-            height=250,
+            height=dp(210),
             allow_stretch=True,
             keep_ratio=True,
         )
@@ -72,30 +73,10 @@ class InicioScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=VERDE_ESTADO,
             size_hint_y=None,
-            height=50,
+            height=dp(48),
         )
 
         self.add_widget(self.bateria_label)
-
-        # ==========================================
-        # BOTÓN NAVEGACIÓN
-        # ==========================================
-
-        self.boton_navegar = MDRaisedButton(
-            text="NAVEGACIÓN",
-            pos_hint={"center_x": 0.5},
-            size_hint=(0.85, None),
-            height=55,
-            md_bg_color=BORDO,
-            theme_text_color="Custom",
-            text_color=CREMA_CLARO,
-        )
-
-        self.boton_navegar.bind(
-            on_release=self.ir_a_gps
-        )
-
-        self.add_widget(self.boton_navegar)
 
         # ==========================================
         # BOTÓN CONECTAR
@@ -105,7 +86,7 @@ class InicioScreen(MDBoxLayout):
             text="CONECTAR BASTÓN",
             pos_hint={"center_x": 0.5},
             size_hint=(0.70, None),
-            height=50,
+            height=dp(52),
             md_bg_color=BORDO_OSCURO,
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
@@ -146,9 +127,7 @@ class InicioScreen(MDBoxLayout):
 
         else:
 
-            self.estado_baston.text = (
-                "BASTÓN DESCONECTADO"
-            )
+            self.estado_baston.text = self.bluetooth_service.last_error or "BASTÓN DESCONECTADO"
 
             self.estado_baston.text_color = (
                 ROJO_EMERGENCIA
@@ -175,16 +154,8 @@ class InicioScreen(MDBoxLayout):
 
         else:
 
-            self.bluetooth_service.connect()
+            if not self.bluetooth_service.connect():
+                self.estado_baston.text = self.bluetooth_service.last_error
 
         self.actualizar_estado(0)
 
-    def ir_a_gps(self, instance):
-
-        app = MDApp.get_running_app()
-
-        if hasattr(app, "switch_screen"):
-
-            app.switch_screen(
-                "navegacion"
-            )

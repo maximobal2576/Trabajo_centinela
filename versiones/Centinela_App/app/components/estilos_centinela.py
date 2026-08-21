@@ -77,9 +77,6 @@ ROJO_EMERGENCIA = (
 # TIPOGRAFÍA
 # ==========================================
 
-# Por ahora usamos los estilos internos
-# de KivyMD para mantener estabilidad.
-
 TITULO_GRANDE = "H3"
 
 TITULO = "H4"

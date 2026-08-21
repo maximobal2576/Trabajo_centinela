@@ -1,4 +1,5 @@
 from kivy.clock import Clock
+from kivy.metrics import dp
 from kivy.utils import platform
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.button import MDRaisedButton
@@ -26,8 +27,8 @@ class EmergenciaScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = [30, 5, 70, 90]
-        self.spacing = 16
+        self.padding = [dp(20), dp(5), dp(20), dp(88)]
+        self.spacing = dp(12)
 
         self.numero_pendiente = ""
         self.destino_pendiente = ""
@@ -46,7 +47,7 @@ class EmergenciaScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             size_hint_y=None,
-            height=60,
+            height=dp(56),
         )
 
         self.add_widget(self.titulo)
@@ -62,7 +63,7 @@ class EmergenciaScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=DORADO_APAGADO,
             size_hint_y=None,
-            height=60,
+            height=dp(56),
         )
 
         self.add_widget(self.estado_llamada)
@@ -76,7 +77,7 @@ class EmergenciaScreen(MDBoxLayout):
             md_bg_color=ROJO_EMERGENCIA,
             pos_hint={"center_x": 0.5},
             size_hint=(0.85, None),
-            height=55,
+            height=dp(52),
             on_release=lambda instance: self.iniciar_llamada(
                 "911",
                 "911"
@@ -94,7 +95,7 @@ class EmergenciaScreen(MDBoxLayout):
             md_bg_color=BORDO,
             pos_hint={"center_x": 0.5},
             size_hint=(0.85, None),
-            height=55,
+            height=dp(52),
             on_release=self.llamar_contacto,
         )
 
@@ -109,7 +110,7 @@ class EmergenciaScreen(MDBoxLayout):
             md_bg_color=BORDO_OSCURO,
             pos_hint={"center_x": 0.5},
             size_hint=(0.85, None),
-            height=55,
+            height=dp(52),
             on_release=self.enviar_ubicacion,
         )
 
@@ -124,7 +125,7 @@ class EmergenciaScreen(MDBoxLayout):
             md_bg_color=OSCURO,
             pos_hint={"center_x": 0.5},
             size_hint=(0.70, None),
-            height=50,
+            height=dp(52),
             disabled=True,
             opacity=0,
             on_release=self.cancelar_llamada,
@@ -365,20 +366,29 @@ class EmergenciaScreen(MDBoxLayout):
 
             return
 
-        from android.permissions import (
-            Permission,
-            request_permissions,
-        )
+        from android.permissions import Permission, check_permission, request_permissions
 
-        request_permissions([
+        permisos = [
             Permission.SEND_SMS,
             Permission.ACCESS_FINE_LOCATION,
             Permission.ACCESS_COARSE_LOCATION,
-        ])
+        ]
+        if not check_permission(Permission.SEND_SMS):
+            self.estado_llamada.text = "Autorizá SMS y ubicación para enviar la alerta."
+            request_permissions(permisos, self._al_resolver_permisos_ubicacion)
+            return
 
-        self.estado_llamada.text = (
-            self._enviar_alerta_ubicacion()
-        )
+        self.estado_llamada.text = self._enviar_alerta_ubicacion()
+
+    def _al_resolver_permisos_ubicacion(self, _permisos, _resultados):
+        """Android responde de forma asíncrona; recién entonces se envía el SMS."""
+        if platform != "android":
+            return
+        from android.permissions import Permission, check_permission
+        if check_permission(Permission.SEND_SMS):
+            self.estado_llamada.text = self._enviar_alerta_ubicacion()
+        else:
+            self.estado_llamada.text = "No se autorizó el envío de SMS."
 
     @staticmethod
     def _enviar_alerta_ubicacion():

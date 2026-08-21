@@ -5,8 +5,14 @@ if platform == "android":
     from android.permissions import Permission, request_permissions
     from jnius import autoclass
 else:
-    import serial
-    from serial.tools import list_ports
+    # pyserial solo se utiliza para probar el HC-05 desde Windows.  No debe
+    # impedir abrir la interfaz cuando todavía no está instalado en VS Code.
+    try:
+        import serial
+        from serial.tools import list_ports
+    except ImportError:
+        serial = None
+        list_ports = None
 
 
 class BluetoothService:
@@ -44,6 +50,13 @@ class BluetoothService:
         return self._connect_windows()
 
     def _connect_windows(self):
+        if serial is None or list_ports is None:
+            self.last_error = (
+                "Falta pyserial en el Python de VS Code. Ejecutá: "
+                "python -m pip install pyserial"
+            )
+            return False
+
         port = self._find_windows_port()
         if port is None:
             self.last_error = "No se encontró el puerto Bluetooth."
@@ -78,6 +91,12 @@ class BluetoothService:
         ])
 
         try:
+            from android.permissions import check_permission
+
+            if not check_permission(Permission.BLUETOOTH_CONNECT):
+                self.last_error = "Autorizá Bluetooth y presioná Conectar nuevamente."
+                return False
+
             BluetoothAdapter = autoclass("android.bluetooth.BluetoothAdapter")
             UUID = autoclass("java.util.UUID")
             adapter = BluetoothAdapter.getDefaultAdapter()
@@ -199,3 +218,14 @@ class BluetoothService:
 
         key, value = line.split(":", 1)
         self.state[key.strip()] = value.strip()
+
+
+_servicio_compartido = None
+
+
+def get_bluetooth_service():
+    """Mantiene una única conexión física aunque se cambie de pantalla."""
+    global _servicio_compartido
+    if _servicio_compartido is None:
+        _servicio_compartido = BluetoothService()
+    return _servicio_compartido

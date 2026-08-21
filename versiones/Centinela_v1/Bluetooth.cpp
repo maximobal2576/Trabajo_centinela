@@ -78,37 +78,28 @@ void Bluetooth::enviarEstado()
 
 void Bluetooth::recibirComandos()
 {
-
-    if(BLUETOOTH_SERIAL.available())
+    static String comando = "";
+    while(BLUETOOTH_SERIAL.available())
     {
-
         Estado::sistema.bluetoothConectado = true;
-
-
-        char comando =
-        BLUETOOTH_SERIAL.read();
-
-
-
-        switch(comando)
+        char caracter = BLUETOOTH_SERIAL.read();
+        if(caracter == '\n' || caracter == '\r')
         {
-
-            case 'D':
-
-                Estado::sistema.estado =
-                SISTEMA_DIAGNOSTICO;
-
-            break;
-
-            case 'N':
-
-                Estado::sistema.estado =
-                SISTEMA_NORMAL;
-
-            break;
-
+            if(comando == "D") Estado::sistema.estado = SISTEMA_DIAGNOSTICO;
+            else if(comando == "N") Estado::sistema.estado = SISTEMA_NORMAL;
+            else if(comando.startsWith("I:"))
+            {
+                // La app envía aquí la indicación de navegación para que el
+                // firmware pueda reproducirla o mostrarla en futuras versiones.
+                Serial.print("INDICACION: ");
+                Serial.println(comando.substring(2));
+            }
+            comando = "";
         }
-
+        else if(comando.length() < 180)
+        {
+            comando += caracter;
+        }
     }
     else if(BLUETOOTH_SERIAL.availableForWrite() > 0)
     {

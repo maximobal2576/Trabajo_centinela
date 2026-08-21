@@ -27,14 +27,14 @@ source.include_exts = py,png,jpg,jpeg,kv,atlas,mp3,wav,ttf
 #source.exclude_exts = spec
 
 # (list) List of directory to exclude (leave empty to not exclude anything)
-#source.exclude_dirs = tests, bin, venv
+source.exclude_dirs = .buildozer,bin,venv,.venv,__pycache__,.git,.vscode
 
 # (list) List of exclusions using pattern matching
 # Do not prefix with './'
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1
+version = 0.2
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -42,7 +42,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,kivymd==1.2.0,pyjnius
+requirements = python3,kivy==2.3.1,kivymd==1.2.0,pyjnius
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -103,25 +103,25 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions.html for all the supported syntaxes and properties)
-#android.permissions = android.permission.INTERNET,android.permission.ACCESS_FINE_LOCATION,android.permission.ACCESS_COARSE_LOCATION,android.permission.BLUETOOTH,android.permission.BLUETOOTH_ADMIN,android.permission.BLUETOOTH_CONNECT,android.permission.BLUETOOTH_SCAN,android.permission.CALL_PHONE,android.permission.SEND_SMS
+android.permissions = INTERNET,BLUETOOTH,BLUETOOTH_ADMIN,BLUETOOTH_SCAN,BLUETOOTH_CONNECT,ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION,CALL_PHONE,SEND_SMS,RECORD_AUDIO,READ_PHONE_STATE
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
 
 # (int) Target Android API, should be as high as possible.
-#android.api = 33
+android.api = 35
 
 # (int) Minimum API your APK / AAB will support.
-#android.minapi = 24
+android.minapi = 24
 
 # (int) Android SDK version to use
 #android.sdk = 20
 
 # (str) Android NDK version to use
-#android.ndk = 23b
+android.ndk = 28c
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
-#android.ndk_api = 21
+android.ndk_api = 24
 
 # (str) Android NDK directory (if empty, it will be automatically downloaded.)
 #android.ndk_path =

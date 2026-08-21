@@ -1,4 +1,5 @@
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivy.metrics import dp
 from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.textfield import MDTextField
@@ -18,8 +19,8 @@ class ConfiguracionScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = [30, 5, 70, 90]
-        self.spacing = 16
+        self.padding = [dp(20), dp(5), dp(20), dp(88)]
+        self.spacing = dp(12)
 
         # ==========================================
         # TÍTULO
@@ -33,7 +34,7 @@ class ConfiguracionScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             size_hint_y=None,
-            height=60,
+            height=dp(56),
         )
 
         self.add_widget(self.titulo)
@@ -50,7 +51,7 @@ class ConfiguracionScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=DORADO_APAGADO,
             size_hint_y=None,
-            height=50,
+            height=dp(48),
         )
 
         self.add_widget(self.subtitulo)
@@ -71,7 +72,7 @@ class ConfiguracionScreen(MDBoxLayout):
             input_filter="int",
             mode="rectangle",
             size_hint_y=None,
-            height=55,
+            height=dp(52),
         )
 
         self.add_widget(self.contacto_input)
@@ -84,7 +85,7 @@ class ConfiguracionScreen(MDBoxLayout):
             text="GUARDAR CONTACTO",
             pos_hint={"center_x": 0.5},
             size_hint=(0.85, None),
-            height=55,
+            height=dp(52),
             md_bg_color=BORDO,
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
@@ -103,7 +104,7 @@ class ConfiguracionScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=DORADO_APAGADO,
             size_hint_y=None,
-            height=50,
+            height=dp(48),
         )
 
         self.add_widget(self.mensaje)

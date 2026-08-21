@@ -1,8 +1,9 @@
 from kivy.clock import Clock
+from kivy.metrics import dp
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.label import MDLabel
 
-from services.bluetooth import BluetoothService
+from services.bluetooth import get_bluetooth_service
 
 from components.estilos_centinela import (
     CREMA_CLARO,
@@ -19,14 +20,13 @@ class EstadoScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = [30, 5, 70, 90]
-        self.spacing = 14
-
+        self.padding = [dp(20), dp(5), dp(20), dp(88)]
+        self.spacing = dp(10)
         # =========================
         # SERVICIO BLUETOOTH
         # =========================
 
-        self.bluetooth_service = BluetoothService()
+        self.bluetooth_service = get_bluetooth_service()
 
         # =========================
         # TÍTULO
@@ -40,7 +40,7 @@ class EstadoScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             size_hint_y=None,
-            height=60,
+            height=dp(56),
         )
 
         self.add_widget(self.titulo)
@@ -57,7 +57,7 @@ class EstadoScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=ROJO_EMERGENCIA,
             size_hint_y=None,
-            height=45,
+            height=dp(44),
         )
 
         self.add_widget(self.conexion)
@@ -74,7 +74,7 @@ class EstadoScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=DORADO_APAGADO,
             size_hint_y=None,
-            height=45,
+            height=dp(44),
         )
 
         self.add_widget(self.bateria)
@@ -90,7 +90,7 @@ class EstadoScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             size_hint_y=None,
-            height=45,
+            height=dp(44),
         )
 
         self.add_widget(self.sistema)
@@ -106,7 +106,7 @@ class EstadoScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             size_hint_y=None,
-            height=45,
+            height=dp(44),
         )
 
         self.add_widget(self.evento)
@@ -122,7 +122,7 @@ class EstadoScreen(MDBoxLayout):
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             size_hint_y=None,
-            height=45,
+            height=dp(44),
         )
 
         self.add_widget(self.direccion)
