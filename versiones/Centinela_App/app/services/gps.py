@@ -64,6 +64,8 @@ class UbicacionService:
                 self.ultimo_error = "Permiso de ubicación denegado."
                 return False
 
+            from kivy.clock import Clock
+
             servicio = self  # referencia fuerte capturada en el closure
 
             class Listener(PythonJavaClass):
@@ -72,20 +74,18 @@ class UbicacionService:
 
                 @java_method("(Landroid/location/Location;)V")
                 def onLocationChanged(self, ubicacion):
-                    lat = ubicacion.getLatitude()
-                    lon = ubicacion.getLongitude()
+                    lat = float(ubicacion.getLatitude())
+                    lon = float(ubicacion.getLongitude())
                     servicio.ultima_ubicacion = (lat, lon)
                     servicio.ultimo_error = ""
-                    # Disparar callback si fue registrado
+                    # Disparar callback de forma segura en el hilo de Kivy
                     if callable(servicio.on_location):
-                        try:
-                            servicio.on_location(lat, lon)
-                        except Exception:
-                            pass
+                        cb = servicio.on_location
+                        Clock.schedule_once(lambda dt: cb(lat, lon), 0)
 
                 @java_method("(Ljava/lang/String;)V")
                 def onProviderDisabled(self, _proveedor):
-                    servicio.ultimo_error = "Activá la ubicación del teléfono."
+                    pass
 
                 @java_method("(Ljava/lang/String;)V")
                 def onProviderEnabled(self, _proveedor):
@@ -102,30 +102,36 @@ class UbicacionService:
             self._manager = PythonActivity.mActivity.getSystemService(
                 Context.LOCATION_SERVICE
             )
-            # Referencia obligatoria: evita que Java descarte el listener.
             self._listener = Listener()
 
-            # Preferir GPS_PROVIDER; caer en NETWORK si no está disponible.
-            proveedor = LocationManager.GPS_PROVIDER
-            if not self._manager.isProviderEnabled(proveedor):
-                proveedor = LocationManager.NETWORK_PROVIDER
+            # Activar actualizaciones continuas en AMBOS proveedores (GPS satelital y Red/WiFi)
+            alguno_activo = False
+            for prov in (LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER):
+                try:
+                    if self._manager.isProviderEnabled(prov):
+                        self._manager.requestLocationUpdates(prov, 500, 0.5, self._listener)
+                        alguno_activo = True
+                except Exception:
+                    pass
 
-            # 500 ms / 0.5 m → actualización verdaderamente continua.
-            self._manager.requestLocationUpdates(
-                proveedor, 500, 0.5, self._listener
-            )
+            # Inyectar última ubicación conocida de inmediato desde el mejor proveedor disponible
+            for prov in (LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER):
+                try:
+                    conocida = self._manager.getLastKnownLocation(prov)
+                    if conocida is not None:
+                        lat = float(conocida.getLatitude())
+                        lon = float(conocida.getLongitude())
+                        self.ultima_ubicacion = (lat, lon)
+                        if callable(self.on_location):
+                            cb = self.on_location
+                            Clock.schedule_once(lambda dt: cb(lat, lon), 0)
+                        break
+                except Exception:
+                    pass
 
-            # Inyectar última ubicación conocida de inmediato si existe.
-            conocida = self._manager.getLastKnownLocation(proveedor)
-            if conocida is not None:
-                lat = conocida.getLatitude()
-                lon = conocida.getLongitude()
-                self.ultima_ubicacion = (lat, lon)
-                if callable(self.on_location):
-                    try:
-                        self.on_location(lat, lon)
-                    except Exception:
-                        pass
+            if not alguno_activo:
+                self.ultimo_error = "Activá la ubicación en los ajustes del teléfono."
+                return False
 
             self.ultimo_error = ""
             return True

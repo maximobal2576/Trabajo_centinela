@@ -16,6 +16,7 @@ Uso desde main.py:
 
 from kivy.metrics import dp, sp
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.animation import Animation
 from kivy.graphics import Color, RoundedRectangle
 from kivymd.app import MDApp
@@ -33,21 +34,21 @@ from components.estilos_centinela import (
 )
 
 # Ancho del panel lateral cuando está abierto
-_ANCHO_PANEL = dp(220)
+_ANCHO_PANEL = dp(240)
 # Velocidad de la animación en segundos
 _DURACION_ANIM = 0.22
 
 
-class _PanelLateral(FloatLayout):
+class _PanelLateral(RelativeLayout):
     """Panel deslizable que contiene los ítems de navegación."""
 
     DESTINOS = [
-        ("home",          "Inicio",        "inicio"),
-        ("signal",        "Estado",        "estado"),
-        ("compass",       "Navegación",    "navegacion"),
-        ("alert-octagon", "Emergencia",    "emergencia"),
-        ("cog",           "Configuración", "configuracion"),
-        ("map-marker-path","Rutas",        "rutas"),
+        ("home", "Inicio", "inicio"),
+        ("signal", "Estado", "estado"),
+        ("compass", "Navegación", "navegacion"),
+        ("alert-octagon", "Emergencia", "emergencia"),
+        ("cog", "Configuración", "configuracion"),
+        ("map-marker-path", "Rutas", "rutas"),
     ]
 
     def __init__(self, cerrar_cb, **kwargs):
@@ -56,23 +57,24 @@ class _PanelLateral(FloatLayout):
         self.size_hint = (None, 1)
         self.width = _ANCHO_PANEL
 
-        # --- Fondo del panel ---
+        # Fondo del panel
         with self.canvas.before:
-            Color(*OSCURO[:3], 0.97)
+            Color(*OSCURO[:3], 0.98)
             self._rect = RoundedRectangle(
-                pos=self.pos, size=self.size,
-                radius=[0, dp(16), dp(16), 0]
+                pos=(0, 0), size=self.size,
+                radius=[0, dp(18), dp(18), 0]
             )
-        self.bind(pos=self._actualizar_rect, size=self._actualizar_rect)
+        self.bind(size=self._actualizar_rect)
 
         contenedor = MDBoxLayout(
             orientation="vertical",
-            padding=[dp(12), dp(48), dp(12), dp(16)],
-            spacing=dp(8),
+            padding=[dp(16), dp(56), dp(16), dp(20)],
+            spacing=dp(10),
             size_hint=(1, 1),
+            pos_hint={"x": 0, "y": 0},
         )
 
-        # Título del menú (solo visual y accesible)
+        # Título del menú
         titulo = MDLabel(
             text="CENTINELA",
             halign="center",
@@ -84,25 +86,22 @@ class _PanelLateral(FloatLayout):
             height=dp(44),
         )
         contenedor.add_widget(titulo)
-        contenedor.add_widget(Widget(size_hint_y=None, height=dp(8)))
+        contenedor.add_widget(Widget(size_hint_y=None, height=dp(6)))
 
         # Ítems de navegación
-        for _icono, texto, pantalla in self.DESTINOS:
+        for i, (_icono, texto, pantalla) in enumerate(self.DESTINOS):
             fila = MDBoxLayout(
                 orientation="horizontal",
                 size_hint=(1, None),
-                height=dp(52),
-                spacing=dp(10),
-                padding=[dp(8), 0, dp(8), 0],
+                height=dp(50),
+                spacing=dp(8),
             )
 
-            # Etiqueta del ítem — TalkBack la lee al navegar por accesibilidad
             etiqueta = MDRaisedButton(
                 text=texto,
-                size_hint=(1, None),
-                height=dp(48),
+                size_hint=(1, 1),
                 font_size=sp(14),
-                md_bg_color=BORDO if self.DESTINOS.index((_icono, texto, pantalla)) % 2 == 0 else BORDO_OSCURO,
+                md_bg_color=BORDO if i % 2 == 0 else BORDO_OSCURO,
                 theme_text_color="Custom",
                 text_color=CREMA_CLARO,
                 elevation=0,
@@ -116,7 +115,7 @@ class _PanelLateral(FloatLayout):
         self.add_widget(contenedor)
 
     def _actualizar_rect(self, *_):
-        self._rect.pos = self.pos
+        self._rect.pos = (0, 0)
         self._rect.size = self.size
 
     def _navegar(self, pantalla):
@@ -128,12 +127,8 @@ class _PanelLateral(FloatLayout):
 
 class MenuLateral(FloatLayout):
     """
-    Contenedor principal del menú lateral.
-
-    Agrega al root:
-      · Un overlay oscuro semitransparente (se muestra al abrir el panel).
-      · El panel deslizable con los ítems.
-      · El botón hamburguesa flotante (sin texto, accesible via hint_text).
+    Contenedor principal del menú lateral deslizable.
+    Mantiene el panel oculto a la izquierda y lo muestra al presionar el botón hamburguesa.
     """
 
     def __init__(self, **kwargs):
@@ -143,65 +138,73 @@ class MenuLateral(FloatLayout):
         # --- Overlay semitransparente ---
         self._overlay = Widget(size_hint=(1, 1), opacity=0)
         with self._overlay.canvas.before:
-            Color(0, 0, 0, 0.45)
+            Color(0, 0, 0, 0.5)
             self._overlay_rect = RoundedRectangle(
-                pos=self._overlay.pos, size=self._overlay.size
+                pos=self.pos, size=self.size
             )
         self._overlay.bind(
             pos=self._upd_overlay,
             size=self._upd_overlay,
-            on_touch_down=self._overlay_tocado,
         )
-        self._overlay.opacity = 0
         self.add_widget(self._overlay)
 
         # --- Panel lateral ---
         self._panel = _PanelLateral(cerrar_cb=self.cerrar)
-        # Empieza fuera de pantalla (a la izquierda)
         self._panel.x = -_ANCHO_PANEL
         self.add_widget(self._panel)
 
-        # --- Botón hamburguesa ---
-        # hint_text es leído por TalkBack como nombre accesible del botón.
-        # No tiene texto visible — solo el ícono "menu".
+        # --- Botón hamburguesa superior izquierdo ---
         self._boton = MDIconButton(
             icon="menu",
             md_bg_color=BORDO,
             theme_icon_color="Custom",
             icon_color=CREMA_CLARO,
-            pos_hint={"x": 0.02, "top": 0.98},
+            pos_hint={"x": 0.03, "top": 0.98},
             size_hint=(None, None),
-            size=(dp(52), dp(52)),
-            # hint_text es el nombre accesible que TalkBack anuncia
-            user_font_size=sp(26),
+            size=(dp(48), dp(48)),
+            icon_size=sp(26),
         )
-        # Workaround: MDIconButton no expone hint_text directo en todas las
-        # versiones de KivyMD; lo asignamos manualmente para accesibilidad.
-        try:
-            self._boton.hint_text = "Menú"
-        except AttributeError:
-            pass
-
         self._boton.bind(on_release=self.alternar)
         self.add_widget(self._boton)
 
-    # ------------------------------------------------------------------
-    # OVERLAY
-    # ------------------------------------------------------------------
+    def on_touch_down(self, touch):
+        # 1. Si toca el botón de hamburguesa, procesarlo
+        if self._boton.collide_point(*touch.pos):
+            return self._boton.on_touch_down(touch)
+
+        # 2. Si el menú está abierto:
+        if self._abierto:
+            # Si toca dentro del panel, pasar el toque al panel
+            if self._panel.collide_point(*touch.pos):
+                return self._panel.on_touch_down(touch)
+            # Si toca afuera del panel (en el overlay), cerrar el menú y consumir el toque
+            self.cerrar()
+            return True
+
+        # 3. Si el menú está cerrado, NO interceptar ningún toque: pasa directo a las pantallas
+        return False
+
+    def on_touch_move(self, touch):
+        if self._abierto and self._panel.collide_point(*touch.pos):
+            return self._panel.on_touch_move(touch)
+        return False
+
+    def on_touch_up(self, touch):
+        if self._boton.collide_point(*touch.pos):
+            return self._boton.on_touch_up(touch)
+        if self._abierto and self._panel.collide_point(*touch.pos):
+            return self._panel.on_touch_up(touch)
+        return False
+
+    def on_size(self, *_):
+        """Al cambiar el tamaño de pantalla (ej. teclado), reposicionar el panel
+        sin interrumpir animaciones activas."""
+        if not self._abierto:
+            self._panel.x = -_ANCHO_PANEL
 
     def _upd_overlay(self, widget, *_):
         self._overlay_rect.pos = widget.pos
         self._overlay_rect.size = widget.size
-
-    def _overlay_tocado(self, widget, touch):
-        if self._abierto and widget.collide_point(*touch.pos):
-            self.cerrar()
-            return True
-        return False
-
-    # ------------------------------------------------------------------
-    # ABRIR / CERRAR
-    # ------------------------------------------------------------------
 
     def alternar(self, *_):
         if self._abierto:
@@ -213,6 +216,8 @@ class MenuLateral(FloatLayout):
         if self._abierto:
             return
         self._abierto = True
+        Animation.stop_all(self._panel)
+        Animation.stop_all(self._overlay)
         Animation(x=0, duration=_DURACION_ANIM, t="out_quad").start(self._panel)
         Animation(opacity=1, duration=_DURACION_ANIM).start(self._overlay)
 
@@ -220,7 +225,9 @@ class MenuLateral(FloatLayout):
         if not self._abierto:
             return
         self._abierto = False
-        Animation(x=-_ANCHO_PANEL, duration=_DURACION_ANIM, t="in_quad").start(
-            self._panel
-        )
-        Animation(opacity=0, duration=_DURACION_ANIM).start(self._overlay)
+        Animation.stop_all(self._panel)
+        Animation.stop_all(self._overlay)
+        anim_panel = Animation(x=-_ANCHO_PANEL, duration=_DURACION_ANIM, t="in_quad")
+        anim_overlay = Animation(opacity=0, duration=_DURACION_ANIM)
+        anim_panel.start(self._panel)
+        anim_overlay.start(self._overlay)

@@ -18,6 +18,9 @@ from components.estilos_centinela import (
 )
 
 
+from kivy.uix.widget import Widget
+
+
 class InicioScreen(MDBoxLayout):
 
     def __init__(self, **kwargs):
@@ -25,13 +28,13 @@ class InicioScreen(MDBoxLayout):
 
         self.orientation = "vertical"
 
-        self.padding = [dp(20), dp(5), dp(20), dp(88)]
+        self.padding = [dp(20), dp(100), dp(20), dp(24)]
         self.spacing = dp(12)
 
         self.bluetooth_service = get_bluetooth_service()
 
         # ==========================================
-        # ESTADO DEL BASTÓN
+        # ESTADO DEL BASTÓN (TÍTULO SUPERIOR)
         # ==========================================
 
         self.estado_baston = MDLabel(
@@ -46,6 +49,9 @@ class InicioScreen(MDBoxLayout):
         )
 
         self.add_widget(self.estado_baston)
+
+        # Espaciador para separar el título y empujar los controles abajo
+        self.add_widget(Widget(size_hint_y=1))
 
         # ==========================================
         # IMAGEN DEL BASTÓN

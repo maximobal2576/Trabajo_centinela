@@ -1,6 +1,7 @@
 from kivy.clock import Clock
 from kivy.metrics import dp
 from kivy.utils import platform
+from kivy.uix.widget import Widget
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.label import MDLabel
@@ -27,7 +28,7 @@ class EmergenciaScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = [dp(20), dp(5), dp(20), dp(88)]
+        self.padding = [dp(20), dp(100), dp(20), dp(24)]
         self.spacing = dp(12)
 
         self.numero_pendiente = ""
@@ -36,7 +37,7 @@ class EmergenciaScreen(MDBoxLayout):
         self.evento_cuenta_regresiva = None
 
         # ==========================================
-        # TÍTULO
+        # TÍTULO (SUPERIOR)
         # ==========================================
 
         self.titulo = MDLabel(
@@ -51,6 +52,9 @@ class EmergenciaScreen(MDBoxLayout):
         )
 
         self.add_widget(self.titulo)
+
+        # Espaciador para separar el título y empujar los botones abajo
+        self.add_widget(Widget(size_hint_y=1))
 
         # ==========================================
         # ESTADO

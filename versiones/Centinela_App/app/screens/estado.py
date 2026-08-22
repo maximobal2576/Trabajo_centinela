@@ -3,6 +3,8 @@ from kivy.metrics import dp
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.label import MDLabel
 
+from kivy.uix.widget import Widget
+
 from services.bluetooth import get_bluetooth_service
 
 from components.estilos_centinela import (
@@ -20,7 +22,7 @@ class EstadoScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = [dp(20), dp(5), dp(20), dp(88)]
+        self.padding = [dp(20), dp(100), dp(20), dp(24)]
         self.spacing = dp(10)
         # =========================
         # SERVICIO BLUETOOTH
@@ -44,6 +46,9 @@ class EstadoScreen(MDBoxLayout):
         )
 
         self.add_widget(self.titulo)
+
+        # Espaciador para separar el título y empujar los datos abajo
+        self.add_widget(Widget(size_hint_y=1))
 
         # =========================
         # CONEXIÓN

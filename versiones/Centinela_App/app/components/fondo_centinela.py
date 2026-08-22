@@ -62,7 +62,7 @@ class FondoCentinela(Widget):
                 1,
                 1,
                 1,
-                0.16
+                0.22
             )
 
             self.logo_fondo = Rectangle(
@@ -243,7 +243,7 @@ class FondoCentinela(Widget):
         if textura is None:
             return
 
-        ancho = self.width * 0.70
+        ancho = self.width * 0.88
 
         if ancho <= 0:
             return

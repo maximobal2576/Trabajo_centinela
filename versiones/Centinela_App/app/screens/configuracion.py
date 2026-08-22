@@ -1,5 +1,6 @@
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.metrics import dp
+from kivy.uix.widget import Widget
 from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.textfield import MDTextField
@@ -19,11 +20,11 @@ class ConfiguracionScreen(MDBoxLayout):
         super().__init__(**kwargs)
 
         self.orientation = "vertical"
-        self.padding = [dp(20), dp(5), dp(20), dp(88)]
+        self.padding = [dp(20), dp(100), dp(20), dp(24)]
         self.spacing = dp(12)
 
         # ==========================================
-        # TÍTULO
+        # TÍTULO (SUPERIOR)
         # ==========================================
 
         self.titulo = MDLabel(
@@ -38,6 +39,9 @@ class ConfiguracionScreen(MDBoxLayout):
         )
 
         self.add_widget(self.titulo)
+
+        # Espaciador para separar el título y empujar la configuración abajo
+        self.add_widget(Widget(size_hint_y=1))
 
         # ==========================================
         # CONTACTO

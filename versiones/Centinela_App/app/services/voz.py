@@ -68,4 +68,6 @@ class VozService:
                 pass
         callback, self._callback = self._callback, None
         if callback:
-            callback(texto, error)
+            from kivy.clock import Clock
+            cb = callback
+            Clock.schedule_once(lambda dt: cb(texto, error), 0)
