@@ -88,6 +88,7 @@ class BluetoothService:
         request_permissions([
             Permission.BLUETOOTH_CONNECT,
             Permission.BLUETOOTH_SCAN,
+            Permission.ACCESS_FINE_LOCATION,
         ])
 
         try:
@@ -98,28 +99,34 @@ class BluetoothService:
                 return False
 
             BluetoothAdapter = autoclass("android.bluetooth.BluetoothAdapter")
-            UUID = autoclass("java.util.UUID")
             adapter = BluetoothAdapter.getDefaultAdapter()
 
             if adapter is None:
                 self.last_error = "Este teléfono no dispone de Bluetooth."
                 return False
 
+            # Si el Bluetooth está desactivado, encenderlo automáticamente
             if not adapter.isEnabled():
-                self.last_error = "Activá el Bluetooth del teléfono."
-                return False
+                try:
+                    adapter.enable()
+                except Exception:
+                    self.last_error = "Activá el Bluetooth del teléfono."
+                    return False
 
+            # 1. Intentar primero con dispositivos ya vinculados
             device = self._find_paired_hc05(adapter)
+
+            # 2. Si NO está vinculado, iniciar búsqueda y auto-emparejamiento in-app
             if device is None:
-                self.last_error = "Emparejá el HC-05 desde Ajustes de Android."
+                self.last_error = "Buscando bastón cercano…"
+                device = self._discover_and_bond_hc05(adapter)
+
+            if device is None:
+                self.last_error = "No se encontró el HC-05 encendido cerca."
                 return False
 
-            self.socket = device.createRfcommSocketToServiceRecord(
-                UUID.fromString(self.HC05_UUID)
-            )
-            self.socket.connect()
-            self.input_stream = self.socket.getInputStream()
-            self.output_stream = self.socket.getOutputStream()
+            # 3. Intentar conexión al socket RFCOMM
+            self._connect_to_device_socket(device)
             self.connected = True
             self.last_error = ""
         except Exception as error:
@@ -127,6 +134,109 @@ class BluetoothService:
             self.last_error = f"No se pudo conectar al HC-05: {error}"
 
         return self.connected
+
+    def _discover_and_bond_hc05(self, adapter):
+        """Busca dispositivos Bluetooth cercanos y vincula automáticamente el HC-05 sin ir a Ajustes."""
+        import time
+        from jnius import PythonJavaClass, java_method
+
+        PythonActivity = autoclass("org.kivy.android.PythonActivity")
+        IntentFilter = autoclass("android.content.IntentFilter")
+        BluetoothDevice = autoclass("android.bluetooth.BluetoothDevice")
+        activity = PythonActivity.mActivity
+
+        encontrado = {"device": None}
+
+        class DiscoveryReceiver(PythonJavaClass):
+            __javainterfaces__ = ["android/content/BroadcastReceiver"]
+            __javacontext__ = "app"
+
+            @java_method("(Landroid/content/Context;Landroid/content/Intent;)V")
+            def onReceive(self, context, intent):
+                action = intent.getAction()
+                if action == BluetoothDevice.ACTION_FOUND:
+                    dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    if dev:
+                        name = (dev.getName() or "").lower()
+                        if "hc-05" in name or "hc-06" in name or "centinela" in name or "baston" in name:
+                            encontrado["device"] = dev
+                            try:
+                                dev.createBond()
+                            except Exception:
+                                pass
+                elif action == "android.bluetooth.device.action.PAIRING_REQUEST":
+                    try:
+                        dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                        if dev:
+                            try:
+                                dev.setPin(bytearray(b"1234"))
+                            except Exception:
+                                dev.setPin(bytearray(b"0000"))
+                    except Exception:
+                        pass
+
+        receiver = DiscoveryReceiver()
+        filtro = IntentFilter()
+        filtro.addAction(BluetoothDevice.ACTION_FOUND)
+        filtro.addAction("android.bluetooth.device.action.PAIRING_REQUEST")
+        filtro.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
+
+        try:
+            activity.registerReceiver(receiver, filtro)
+            if adapter.isDiscovering():
+                adapter.cancelDiscovery()
+            adapter.startDiscovery()
+
+            inicio = time.time()
+            while time.time() - inicio < 8.0:
+                if encontrado["device"] is not None:
+                    break
+                dev_bond = self._find_paired_hc05(adapter)
+                if dev_bond is not None:
+                    encontrado["device"] = dev_bond
+                    break
+                time.sleep(0.4)
+
+            try:
+                adapter.cancelDiscovery()
+            except Exception:
+                pass
+        except Exception:
+            pass
+        finally:
+            try:
+                activity.unregisterReceiver(receiver)
+            except Exception:
+                pass
+
+        return encontrado["device"]
+
+    def _connect_to_device_socket(self, device):
+        """Crea y conecta el socket RFCOMM con soporte para canal estándar y fallback por reflexión."""
+        UUID = autoclass("java.util.UUID")
+
+        # Intento 1: RFCOMM estándar por UUID
+        try:
+            self.socket = device.createRfcommSocketToServiceRecord(
+                UUID.fromString(self.HC05_UUID)
+            )
+            self.socket.connect()
+        except Exception:
+            # Intento 2: Insecure RFCOMM por UUID
+            try:
+                self.socket = device.createInsecureRfcommSocketToServiceRecord(
+                    UUID.fromString(self.HC05_UUID)
+                )
+                self.socket.connect()
+            except Exception:
+                # Intento 3: Reflexión directa en canal 1
+                Integer = autoclass("java.lang.Integer")
+                method = device.getClass().getMethod("createRfcommSocket", Integer.TYPE)
+                self.socket = method.invoke(device, 1)
+                self.socket.connect()
+
+        self.input_stream = self.socket.getInputStream()
+        self.output_stream = self.socket.getOutputStream()
 
     @staticmethod
     def _find_paired_hc05(adapter):
@@ -136,7 +246,7 @@ class BluetoothService:
             device = devices.next()
             name = (device.getName() or "").lower()
 
-            if "hc-05" in name or "hc-06" in name:
+            if "hc-05" in name or "hc-06" in name or "centinela" in name or "baston" in name:
                 return device
 
         return None

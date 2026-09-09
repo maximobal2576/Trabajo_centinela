@@ -99,17 +99,18 @@ void Salida::actualizarBuzzer()
 
     if(Estado::sistema.eventoActual == EVENTO_CAIDA)
     {
-
-        periodo = 300;
+        periodo = 250; // Beep rápido de emergencia
+    }
+    else if(Estado::salida.buzzerBalizaGPS)
+    {
+        periodo = 180; // Baliza acústica GPS de esquina (a 3 metros)
     }
     else if(Estado::sistema.eventoActual == EVENTO_BATERIA_BAJA)
     {
-
         periodo = 700;
     }
     else if(Estado::sistema.eventoActual == EVENTO_ERROR)
     {
-
         periodo = 500;
     }
 

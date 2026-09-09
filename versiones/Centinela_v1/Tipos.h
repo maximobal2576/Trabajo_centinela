@@ -153,6 +153,8 @@ struct DatosSalida
     bool reproducirAudio;
 
     int audioID;
+
+    bool buzzerBalizaGPS;
 };
 
 

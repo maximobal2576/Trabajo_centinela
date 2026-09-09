@@ -9,6 +9,7 @@ Servo servoRadar;
 
 
 int anguloRadar = RADAR_IZQUIERDA;
+int direccionBarrido = RADAR_PASO;
 
 
 
@@ -34,6 +35,7 @@ void Radar::iniciar()
     Estado::sensores.radarIzquierda = 400;
     Estado::sensores.radarCentro = 400;
     Estado::sensores.radarDerecha = 400;
+    Estado::sensores.anguloRadar = anguloRadar;
 
 
 
@@ -44,70 +46,29 @@ void Radar::iniciar()
 
 
 // ------------------------------
-// MEDIR DISTANCIA HC-SR04
+// MEDIR DISTANCIA HC-SR04 (RÁPIDO)
 // ------------------------------
 
 int medirRadar()
 {
 
-    long suma = 0;
-
-    int validas = 0;
-
-
-
-    for(int i = 0; i < RADAR_MEDICIONES; i++)
-    {
-
-
-        digitalWrite(TRIG_RADAR, LOW);
-        delayMicroseconds(2);
+    digitalWrite(TRIG_RADAR, LOW);
+    delayMicroseconds(2);
 
 
 
-        digitalWrite(TRIG_RADAR, HIGH);
-        delayMicroseconds(10);
+    digitalWrite(TRIG_RADAR, HIGH);
+    delayMicroseconds(10);
 
 
 
-        digitalWrite(TRIG_RADAR, LOW);
+    digitalWrite(TRIG_RADAR, LOW);
 
 
 
-        long tiempo =
-        pulseIn(ECHO_RADAR, HIGH, 30000);
-
-
-
-        if(tiempo > 0)
-        {
-
-
-            int distancia =
-            tiempo * 0.034 / 2;
-
-
-
-            if(distancia >= 2 && distancia <=400)
-            {
-
-                suma += distancia;
-
-                validas++;
-
-            }
-
-        }
-
-
-
-        delay(10);
-
-    }
-
-
-
-    if(validas == 0)
+    // Timeout de 12ms (~2 metros max) para no congelar el microcontrolador
+    long tiempo = pulseIn(ECHO_RADAR, HIGH, 12000);
+    if(tiempo <= 0)
     {
 
         return 400;
@@ -116,28 +77,30 @@ int medirRadar()
 
 
 
-    return suma / validas;
+    int distancia = (int)(tiempo * 0.034 / 2);
+    if(distancia < 2 || distancia > 400)
+    {
+
+        return 400;
+
+    }
+
+
+
+    return distancia;
 
 }
 
 
 
 // ------------------------------
-// ACTUALIZAR RADAR
+// ACTUALIZAR RADAR (BARRIDO FLUIDO)
 // ------------------------------
 
 void Radar::actualizar()
 {
 
-    // mover servo
-
     servoRadar.write(anguloRadar);
-
-
-
-    // esperar estabilización
-
-    delay(RADAR_SETTLE_MS);
 
 
 
@@ -145,28 +108,8 @@ void Radar::actualizar()
 
 
 
-
-    Serial.print("Angulo: ");
-
-    Serial.print(anguloRadar);
-
-
-    Serial.print("  Distancia: ");
-
-    Serial.print(distancia);
-
-
-    Serial.println(" cm");
-
-
-
-
-    // -------------------------
-    // GUARDAR SEGÚN DIRECCIÓN
-    // -------------------------
-
-
-    if(anguloRadar <= 75)
+    // Guardar según dirección del ángulo actual
+    if(anguloRadar <= 65)
     {
 
         Estado::sensores.radarIzquierda = distancia;
@@ -174,7 +117,7 @@ void Radar::actualizar()
     }
 
 
-    else if(anguloRadar <= 105)
+    else if(anguloRadar <= 115)
     {
 
         Estado::sensores.radarCentro = distancia;
@@ -194,36 +137,24 @@ void Radar::actualizar()
 
 
 
-    Serial.print("IZQ: ");
+    // Barrido ida y vuelta (ping-pong suave)
+    anguloRadar += direccionBarrido;
+    if(anguloRadar >= RADAR_DERECHA)
+    {
 
-    Serial.print(Estado::sensores.radarIzquierda);
+        anguloRadar = RADAR_DERECHA;
 
+        direccionBarrido = -RADAR_PASO;
 
-
-    Serial.print("  CENTRO: ");
-
-    Serial.print(Estado::sensores.radarCentro);
-
-
-
-    Serial.print("  DER: ");
-
-    Serial.println(Estado::sensores.radarDerecha);
+    }
 
 
-
-
-    // avanzar servo
-
-
-    anguloRadar += RADAR_PASO;
-
-
-
-    if(anguloRadar > RADAR_DERECHA)
+    else if(anguloRadar <= RADAR_IZQUIERDA)
     {
 
         anguloRadar = RADAR_IZQUIERDA;
+
+        direccionBarrido = RADAR_PASO;
 
     }
 

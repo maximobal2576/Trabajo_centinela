@@ -52,42 +52,23 @@ void Estado::iniciar()
 
 
     // Salidas
-
     salida.motorIzquierdo = 0;
-
     salida.motorCentro = 0;
-
     salida.motorDerecho = 0;
-
     salida.motorFrontal = 0;
-
-
     salida.reproducirAudio = false;
-
     salida.audioID = 0;
-
-
+    salida.buzzerBalizaGPS = false;
 
     // Sistema
-
     sistema.estado = SISTEMA_INICIO;
-
     sistema.eventoActual = EVENTO_NORMAL;
-
     sistema.prioridadActual = PRIORIDAD_BAJA;
-
     sistema.direccion = DIRECCION_NINGUNA;
-
-
     sistema.bateria = 100;
-
     sistema.bluetoothConectado = false;
-
     sistema.audioOcupado = false;
-
     sistema.audioPendienteID = 0;
-
-
 
     // App
 

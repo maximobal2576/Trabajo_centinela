@@ -2,21 +2,23 @@ from kivy.utils import platform
 
 
 class UbicacionService:
-    """Ubicación en primer plano mediante el proveedor GPS o de red de Android.
+    """Ubicación en primer plano mediante el proveedor GPS, red/datos móviles (celular),
+    WiFi y Fused Provider de Android.
 
-    Cambios v2:
-    - Intervalo reducido a 500 ms / 0.5 m para actualización continua.
-    - Callback opcional ``on_location(latitud, longitud)`` invocado en cada
-      nueva coordenada recibida desde Java (sin depender del polling de Kivy).
-    - Referencia fuerte al Listener guardada en ``self._listener`` para evitar
-      que el GC de Android descarte el objeto y bloquee las actualizaciones.
+    Características:
+    - Intervalo continuo de 500 ms / 0.5 m.
+    - Soporte multicanal: GPS satelital, Network (antenas celulares/datos móviles y WiFi),
+      Passive y Fused provider de Android.
+    - Selección inteligente de la última ubicación conocida según el timestamp más reciente.
+    - Callback reactivo on_location(lat, lon) despachado al hilo principal de Kivy.
+    - Retención fuerte de referencia al Listener para evitar recolección por el GC de Java.
     """
 
     def __init__(self):
         self.activo = False
         self.ultima_ubicacion = None
         self.ultimo_error = ""
-        self.on_location = None   # callable(lat, lon) opcional
+        self.on_location = None  # callable(lat, lon) opcional
         self._manager = None
         self._listener = None
 
@@ -104,33 +106,70 @@ class UbicacionService:
             )
             self._listener = Listener()
 
-            # Activar actualizaciones continuas en AMBOS proveedores (GPS satelital y Red/WiFi)
+            # Obtener lista completa de proveedores disponibles en el dispositivo
+            # (GPS satelital, Network para datos móviles/antenas/WiFi, Passive y Fused)
+            proveedores_disponibles = []
+            try:
+                lista_java = self._manager.getAllProviders()
+                if lista_java is not None:
+                    for i in range(lista_java.size()):
+                        prov_nombre = str(lista_java.get(i))
+                        if prov_nombre and prov_nombre not in proveedores_disponibles:
+                            proveedores_disponibles.append(prov_nombre)
+            except Exception:
+                pass
+
+            # Asegurar proveedores estándar conocidos
+            proveedores_base = [
+                LocationManager.GPS_PROVIDER,
+                LocationManager.NETWORK_PROVIDER,
+            ]
+            if hasattr(LocationManager, "PASSIVE_PROVIDER"):
+                proveedores_base.append(LocationManager.PASSIVE_PROVIDER)
+            if hasattr(LocationManager, "FUSED_PROVIDER"):
+                proveedores_base.append(LocationManager.FUSED_PROVIDER)
+            else:
+                proveedores_base.append("fused")
+
+            for prov in proveedores_base:
+                if prov not in proveedores_disponibles:
+                    proveedores_disponibles.append(prov)
+
+            # Activar actualizaciones continuas en todos los proveedores posibles
             alguno_activo = False
-            for prov in (LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER):
+            for prov in proveedores_disponibles:
                 try:
-                    if self._manager.isProviderEnabled(prov):
-                        self._manager.requestLocationUpdates(prov, 500, 0.5, self._listener)
-                        alguno_activo = True
+                    self._manager.requestLocationUpdates(
+                        prov, 500, 0.5, self._listener
+                    )
+                    alguno_activo = True
                 except Exception:
                     pass
 
-            # Inyectar última ubicación conocida de inmediato desde el mejor proveedor disponible
-            for prov in (LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER):
+            # Inyectar la ubicación más reciente conocida comparando timestamps de todos los proveedores
+            mejor_ubicacion = None
+            mejor_timestamp = 0
+            for prov in proveedores_disponibles:
                 try:
                     conocida = self._manager.getLastKnownLocation(prov)
                     if conocida is not None:
-                        lat = float(conocida.getLatitude())
-                        lon = float(conocida.getLongitude())
-                        self.ultima_ubicacion = (lat, lon)
-                        if callable(self.on_location):
-                            cb = self.on_location
-                            Clock.schedule_once(lambda dt: cb(lat, lon), 0)
-                        break
+                        tiempo = conocida.getTime()
+                        if mejor_ubicacion is None or tiempo > mejor_timestamp:
+                            mejor_ubicacion = conocida
+                            mejor_timestamp = tiempo
                 except Exception:
                     pass
 
-            if not alguno_activo:
-                self.ultimo_error = "Activá la ubicación en los ajustes del teléfono."
+            if mejor_ubicacion is not None:
+                lat = float(mejor_ubicacion.getLatitude())
+                lon = float(mejor_ubicacion.getLongitude())
+                self.ultima_ubicacion = (lat, lon)
+                if callable(self.on_location):
+                    cb = self.on_location
+                    Clock.schedule_once(lambda dt: cb(lat, lon), 0)
+
+            if not alguno_activo and self.ultima_ubicacion is None:
+                self.ultimo_error = "Activá la ubicación o datos móviles en los ajustes."
                 return False
 
             self.ultimo_error = ""
@@ -170,7 +209,7 @@ class UbicacionService:
 
     @staticmethod
     def obtener_ubicacion_actual():
-        """Lee una ubicación reciente sin iniciar un seguimiento continuo."""
+        """Lee la ubicación más reciente entre todos los proveedores (GPS, datos móviles, WiFi)."""
         if platform != "android":
             return None
         try:
@@ -189,13 +228,42 @@ class UbicacionService:
             manager = PythonActivity.mActivity.getSystemService(
                 Context.LOCATION_SERVICE
             )
-            for proveedor in (
+
+            proveedores = []
+            try:
+                lista_java = manager.getAllProviders()
+                if lista_java is not None:
+                    for i in range(lista_java.size()):
+                        p = str(lista_java.get(i))
+                        if p and p not in proveedores:
+                            proveedores.append(p)
+            except Exception:
+                pass
+
+            for p in (
                 LocationManager.GPS_PROVIDER,
                 LocationManager.NETWORK_PROVIDER,
+                getattr(LocationManager, "PASSIVE_PROVIDER", "passive"),
+                getattr(LocationManager, "FUSED_PROVIDER", "fused"),
             ):
-                ubicacion = manager.getLastKnownLocation(proveedor)
-                if ubicacion is not None:
-                    return ubicacion.getLatitude(), ubicacion.getLongitude()
+                if p not in proveedores:
+                    proveedores.append(p)
+
+            mejor_ubicacion = None
+            mejor_timestamp = 0
+            for proveedor in proveedores:
+                try:
+                    ubicacion = manager.getLastKnownLocation(proveedor)
+                    if ubicacion is not None:
+                        tiempo = ubicacion.getTime()
+                        if mejor_ubicacion is None or tiempo > mejor_timestamp:
+                            mejor_ubicacion = ubicacion
+                            mejor_timestamp = tiempo
+                except Exception:
+                    pass
+
+            if mejor_ubicacion is not None:
+                return float(mejor_ubicacion.getLatitude()), float(mejor_ubicacion.getLongitude())
         except Exception:
             return None
         return None

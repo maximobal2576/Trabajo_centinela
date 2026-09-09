@@ -68,8 +68,13 @@ class CentinelaApp(MDApp):
         # Permite navegar entre pantallas y ejecutar acciones por voz.
         # ============================================================
         from kivymd.uix.button import MDIconButton
-        from components.estilos_centinela import CREMA_CLARO
+        from kivymd.uix.boxlayout import MDBoxLayout
+        from kivymd.uix.label import MDLabel
+        from kivymd.uix.card import MDCard
+        from components.estilos_centinela import CREMA_CLARO, DORADO_APAGADO, VERDE_ESTADO, ROJO_EMERGENCIA, OSCURO
         from kivy.metrics import sp
+        from kivy.clock import Clock
+        from services.bluetooth import get_bluetooth_service
 
         self.btn_mic_global = MDIconButton(
             icon="microphone",
@@ -85,6 +90,49 @@ class CentinelaApp(MDApp):
         root.add_widget(self.btn_mic_global)
 
         # ============================================================
+        # INDICADOR DE BATERÍA GLOBAL (Centro superior, entre menú y micrófono)
+        # Muestra el ícono dinámico y porcentaje del bastón en todas las pantallas.
+        # ============================================================
+        self.badge_bateria = MDCard(
+            orientation="horizontal",
+            size_hint=(None, None),
+            size=(dp(84), dp(34)),
+            pos_hint={"center_x": 0.5, "top": 0.975},
+            padding=[dp(6), dp(2), dp(8), dp(2)],
+            spacing=dp(4),
+            md_bg_color=(*OSCURO[:3], 0.88),
+            line_color=DORADO_APAGADO,
+            line_width=dp(1.2),
+            radius=[dp(17)],
+            elevation=3,
+        )
+        self.icono_bateria_global = MDIconButton(
+            icon="battery-bluetooth",
+            theme_icon_color="Custom",
+            icon_color=VERDE_ESTADO,
+            icon_size=sp(16),
+            size_hint=(None, 1),
+            width=dp(22),
+            ripple_scale=0,
+        )
+        self.lbl_bateria_global = MDLabel(
+            text="--%",
+            halign="center",
+            font_style="Caption",
+            bold=True,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO,
+            size_hint=(1, 1),
+            font_size=sp(11),
+        )
+        self.badge_bateria.add_widget(self.icono_bateria_global)
+        self.badge_bateria.add_widget(self.lbl_bateria_global)
+        root.add_widget(self.badge_bateria)
+
+        self.bluetooth_service = get_bluetooth_service()
+        Clock.schedule_interval(self._actualizar_bateria_global, 1.0)
+
+        # ============================================================
         # MENÚ LATERAL DESPLEGABLE (Esquina superior izquierda)
         # ============================================================
         self.menu = MenuLateral(
@@ -94,6 +142,40 @@ class CentinelaApp(MDApp):
         root.add_widget(self.menu)
 
         return root
+
+    def _actualizar_bateria_global(self, dt):
+        """Actualiza el icono y porcentaje de la batería del bastón en todas las pantallas."""
+        try:
+            if not self.bluetooth_service.connected:
+                self.lbl_bateria_global.text = "OFF"
+                self.lbl_bateria_global.text_color = ROJO_EMERGENCIA
+                self.icono_bateria_global.icon = "bluetooth-off"
+                self.icono_bateria_global.icon_color = ROJO_EMERGENCIA
+                return
+
+            bateria_str = str(self.bluetooth_service.state.get("BATERIA", "--")).strip()
+            if bateria_str.isdigit():
+                nivel = int(bateria_str)
+                self.lbl_bateria_global.text = f"{nivel}%"
+                if nivel > 60:
+                    self.icono_bateria_global.icon = "battery-high"
+                    self.icono_bateria_global.icon_color = VERDE_ESTADO
+                    self.lbl_bateria_global.text_color = CREMA_CLARO
+                elif nivel > 20:
+                    self.icono_bateria_global.icon = "battery-medium"
+                    self.icono_bateria_global.icon_color = DORADO_APAGADO
+                    self.lbl_bateria_global.text_color = CREMA_CLARO
+                else:
+                    self.icono_bateria_global.icon = "battery-alert"
+                    self.icono_bateria_global.icon_color = ROJO_EMERGENCIA
+                    self.lbl_bateria_global.text_color = ROJO_EMERGENCIA
+            else:
+                self.lbl_bateria_global.text = "--%"
+                self.icono_bateria_global.icon = "battery-bluetooth"
+                self.icono_bateria_global.icon_color = DORADO_APAGADO
+                self.lbl_bateria_global.text_color = CREMA_CLARO
+        except Exception:
+            pass
 
     def _escuchar_comando_global(self, _instance=None):
         """Activa el reconocimiento de voz para comandos globales y navegación."""
@@ -195,6 +277,17 @@ class CentinelaApp(MDApp):
                     screen_widget._eliminar_ruta_seleccionada(None)
                 return
 
+        # Si el comando es exploración del entorno (¿Dónde estoy?)
+        if any(w in comando for w in ("dónde estoy", "donde estoy", "explorar", "mi ubicación", "mi ubicacion", "mi posición", "mi posicion")):
+            self.switch_screen("navegacion")
+            try:
+                screen_nav = self.sm.get_screen("navegacion").children[-1]
+                if hasattr(screen_nav, "explorar_entorno"):
+                    screen_nav.explorar_entorno()
+            except Exception:
+                pass
+            return
+
         # Si no fue comando de pantalla, y es un destino (ej. "ir a ...", "farmacia", etc.):
         self.switch_screen("navegacion")
         try:
@@ -214,6 +307,24 @@ class CentinelaApp(MDApp):
     def on_start(self):
         """El botón Atrás cierra el menú si está abierto, o vuelve al inicio."""
         Window.bind(on_keyboard=self._on_keyboard)
+
+    def on_pause(self):
+        """Mantiene los servicios de GPS, Bluetooth y notificaciones activos al suspender la pantalla."""
+        return True
+
+    def on_resume(self):
+        """Al volver a la app (ej: tocando la notificación), ir a pantalla Navegación."""
+        try:
+            from kivy.utils import platform
+            if platform == "android":
+                from jnius import autoclass
+                PythonActivity = autoclass("org.kivy.android.PythonActivity")
+                activity = PythonActivity.mActivity
+                intent = activity.getIntent()
+                if intent and intent.getAction() == "OPEN_NAVEGACION":
+                    self.switch_screen("navegacion")
+        except Exception:
+            pass
 
     def _on_keyboard(self, _window, key, *_args):
         if key == 27:

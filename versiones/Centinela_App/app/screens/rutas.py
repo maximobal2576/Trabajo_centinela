@@ -158,7 +158,7 @@ class RutasScreen(MDBoxLayout):
             spacing=dp(8),
         )
         self.btn_reanudar = MDRaisedButton(
-            text="REANUDAR RUTA",
+            text="REANUDAR (IDA)",
             size_hint=(0.5, 1),
             md_bg_color=BORDO,
             theme_text_color="Custom",
@@ -166,28 +166,39 @@ class RutasScreen(MDBoxLayout):
             disabled=True,
             on_release=self._reanudar_ruta_seleccionada,
         )
-        self.btn_renombrar = MDRaisedButton(
-            text="CAMBIAR NOMBRE",
+        self.btn_invertir = MDRaisedButton(
+            text="VOLVER (INVERTIR)",
             size_hint=(0.5, 1),
+            md_bg_color=BORDO,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO,
+            disabled=True,
+            on_release=self._invertir_y_reanudar_seleccionada,
+        )
+        fila_acciones_1.add_widget(self.btn_reanudar)
+        fila_acciones_1.add_widget(self.btn_invertir)
+        self.add_widget(fila_acciones_1)
+
+        fila_acciones_2 = MDBoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(44),
+            spacing=dp(6),
+        )
+        self.btn_renombrar = MDRaisedButton(
+            text="RENOMBRAR",
+            size_hint=(0.33, 1),
+            font_size=sp(11),
             md_bg_color=BORDO_OSCURO,
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             disabled=True,
             on_release=self._abrir_panel_renombrar,
         )
-        fila_acciones_1.add_widget(self.btn_reanudar)
-        fila_acciones_1.add_widget(self.btn_renombrar)
-        self.add_widget(fila_acciones_1)
-
-        fila_acciones_2 = MDBoxLayout(
-            orientation="horizontal",
-            size_hint_y=None,
-            height=dp(46),
-            spacing=dp(8),
-        )
         self.btn_eliminar = MDRaisedButton(
-            text="ELIMINAR RUTA",
-            size_hint=(0.5, 1),
+            text="ELIMINAR",
+            size_hint=(0.33, 1),
+            font_size=sp(11),
             md_bg_color=BORDO_OSCURO,
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
@@ -195,14 +206,16 @@ class RutasScreen(MDBoxLayout):
             on_release=self._eliminar_ruta_seleccionada,
         )
         self.btn_detener = MDRaisedButton(
-            text="DETENER SEGUIMIENTO",
-            size_hint=(0.5, 1),
+            text="DETENER",
+            size_hint=(0.34, 1),
+            font_size=sp(11),
             md_bg_color=BORDO_OSCURO,
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             disabled=True,
             on_release=self._detener_seguimiento,
         )
+        fila_acciones_2.add_widget(self.btn_renombrar)
         fila_acciones_2.add_widget(self.btn_eliminar)
         fila_acciones_2.add_widget(self.btn_detener)
         self.add_widget(fila_acciones_2)
@@ -352,12 +365,14 @@ class RutasScreen(MDBoxLayout):
 
         # Habilitar botones de acción
         self.btn_reanudar.disabled = False
+        self.btn_invertir.disabled = False
         self.btn_renombrar.disabled = False
         self.btn_eliminar.disabled = False
         self.btn_detener.disabled = False
 
     def _deshabilitar_acciones(self):
         self.btn_reanudar.disabled = True
+        self.btn_invertir.disabled = True
         self.btn_renombrar.disabled = True
         self.btn_eliminar.disabled = True
         self.btn_detener.disabled = True
@@ -382,8 +397,36 @@ class RutasScreen(MDBoxLayout):
             self.gps.iniciar()
             ubicacion = self.gps.obtener_ubicacion()
 
-        indicacion = RutasService.iniciar_seguimiento(ruta, ubicacion)
+        indicacion = RutasService.iniciar_seguimiento(ruta, ubicacion, auto_direccion=False)
         self.estado.text = indicacion or f"Retomando «{ruta.get('nombre')}»."
+        if app and hasattr(app, "switch_screen"):
+            app.switch_screen("navegacion")
+            try:
+                screen_nav = app.sm.get_screen("navegacion").children[-1]
+                if hasattr(screen_nav, "_mostrar_indicacion") and indicacion:
+                    screen_nav._mostrar_indicacion(indicacion)
+            except Exception:
+                pass
+
+    def _invertir_y_reanudar_seleccionada(self, _instance=None):
+        """Invierte la ruta seleccionada (trayecto de regreso) e inicia el seguimiento."""
+        if self.ruta_seleccionada_idx is None:
+            return
+        rutas = RutasService.cargar_rutas()
+        if self.ruta_seleccionada_idx >= len(rutas):
+            return
+
+        ruta_orig = rutas[self.ruta_seleccionada_idx]
+        ruta_inv = RutasService.invertir_ruta(ruta_orig)
+        app = MDApp.get_running_app()
+
+        ubicacion = self.gps.obtener_ubicacion()
+        if ubicacion is None and not self.gps.activo:
+            self.gps.iniciar()
+            ubicacion = self.gps.obtener_ubicacion()
+
+        indicacion = RutasService.iniciar_seguimiento(ruta_inv, ubicacion, auto_direccion=False)
+        self.estado.text = indicacion or f"Retomando regreso «{ruta_inv.get('nombre')}»."
         if app and hasattr(app, "switch_screen"):
             app.switch_screen("navegacion")
             try:

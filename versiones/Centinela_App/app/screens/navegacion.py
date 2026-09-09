@@ -22,6 +22,7 @@ from components.estilos_centinela import (
 )
 from services.bluetooth import get_bluetooth_service
 from services.gps import get_ubicacion_service
+from services.notificaciones import NotificacionService
 from services.rutas import RutasService
 from services.voz import VozService
 
@@ -46,6 +47,11 @@ class NavegacionScreen(MDBoxLayout):
 
         # Registrar callback de ubicación para actualización inmediata en UI
         self.gps.on_location = self._on_nueva_ubicacion
+        self._recalculando_desvio = False
+        self._buzzer_esquina_activo = False
+        self._calculo_pendiente_destino = None
+        self._calculo_pendiente_guardar = None
+        self._bloqueo_tiempo_llegada = False
 
         # =========================
         # TÍTULO E INDICACIONES (SUPERIOR)
@@ -145,34 +151,19 @@ class NavegacionScreen(MDBoxLayout):
         self.add_widget(self.boton_ir)
 
         # =========================
-        # BOTONES GPS (INICIAR / DETENER)
+        # BOTÓN DETENER GPS (único — las indicaciones se emiten automáticamente)
         # =========================
-        fila_gps_botones = MDBoxLayout(
-            orientation="horizontal",
-            size_hint_y=None,
-            height=dp(46),
-            spacing=dp(10),
-            pos_hint={"center_x": 0.5},
-        )
-        self.boton_iniciar = MDRaisedButton(
-            text="INICIAR GPS",
-            size_hint=(0.5, 1),
-            md_bg_color=BORDO,
-            theme_text_color="Custom",
-            text_color=CREMA_CLARO,
-            on_release=self.iniciar_ubicacion,
-        )
         self.boton_detener = MDRaisedButton(
             text="DETENER GPS",
-            size_hint=(0.5, 1),
+            pos_hint={"center_x": 0.5},
+            size_hint=(0.95, None),
+            height=dp(46),
             md_bg_color=BORDO_OSCURO,
             theme_text_color="Custom",
             text_color=CREMA_CLARO,
             on_release=self.detener_ubicacion,
         )
-        fila_gps_botones.add_widget(self.boton_iniciar)
-        fila_gps_botones.add_widget(self.boton_detener)
-        self.add_widget(fila_gps_botones)
+        self.add_widget(self.boton_detener)
 
         # =========================
         # PANEL DIÁLOGO / PREGUNTA GUARDAR RUTA
@@ -279,33 +270,94 @@ class NavegacionScreen(MDBoxLayout):
         if RutasService.esta_grabando():
             RutasService.registrar_punto(lat, lon)
 
-        indicacion = RutasService.indicacion_actual(ubicacion)
-        if indicacion:
-            self._mostrar_indicacion(indicacion)
+        # Si había un cálculo de ruta esperando señal de GPS, lanzarlo inmediatamente
+        if self._calculo_pendiente_destino:
+            dest = self._calculo_pendiente_destino
+            guardar = self._calculo_pendiente_guardar
+            self._calculo_pendiente_destino = None
+            self._calculo_pendiente_guardar = None
+            self._iniciar_recorrido_interno(dest, guardar_nombre=guardar)
+
+        if RutasService.esta_siguiendo():
+            ruta_act = RutasService._ruta_en_seguimiento
+            if ruta_act and ruta_act.get("puntos"):
+                puntos = ruta_act["puntos"]
+                # 1. Comprobar baliza buzzer a 3 metros de la esquina
+                idx = getattr(RutasService, "_indice_siguiente", 0)
+                idx_esquina, _rumbo = RutasService._proxima_esquina(puntos, idx)
+                if idx_esquina < len(puntos):
+                    esquina = puntos[idx_esquina]
+                    dist_esquina = RutasService.distancia_metros(ubicacion, esquina)
+                    if dist_esquina <= 3.5:
+                        if not self._buzzer_esquina_activo:
+                            self._buzzer_esquina_activo = True
+                            self.bluetooth.send_command("B:1\n")
+                    else:
+                        if self._buzzer_esquina_activo:
+                            self._buzzer_esquina_activo = False
+                            self.bluetooth.send_command("B:0\n")
+
+                # 2. Comprobar si hay desvío mayor a 100m
+                _idx, punto_cercano = RutasService.punto_mas_cercano(ruta_act, ubicacion)
+                if punto_cercano:
+                    dist_desvio = RutasService.distancia_metros(ubicacion, punto_cercano)
+                    if dist_desvio > 100 and not self._recalculando_desvio:
+                        self._recalcular_por_desvio(ubicacion, dist_desvio)
+                        return
+
+        if not self._bloqueo_tiempo_llegada:
+            indicacion = RutasService.indicacion_actual(ubicacion)
+            if indicacion:
+                self._mostrar_indicacion(indicacion)
 
     # ==================================================
     # INICIAR Y DETENER GPS
     # ==================================================
 
     def iniciar_ubicacion(self, instance=None):
+        """Solo se llama automáticamente en on_enter. No registra listeners duplicados."""
         try:
-            if self.gps.iniciar():
-                self.estado_gps.text = "GPS: Buscando ubicación…"
-                self.estado_gps.text_color = VERDE_ESTADO
-            else:
-                self.estado_gps.text = f"GPS: {self.gps.ultimo_error}"
-                self.estado_gps.text_color = CREMA_CLARO
+            if not self.gps.activo:
+                if self.gps.iniciar():
+                    self.estado_gps.text = "GPS: Buscando ubicación…"
+                    self.estado_gps.text_color = VERDE_ESTADO
+                    NotificacionService.activar_modo_segundo_plano()
+                else:
+                    self.estado_gps.text = f"GPS: {self.gps.ultimo_error}"
+                    self.estado_gps.text_color = CREMA_CLARO
         except Exception as e:
             self.estado_gps.text = f"GPS: Error - {e}"
 
+    def _forzar_indicacion_actual(self, instance=None):
+        """Repite la indicación actual en pantalla y por Bluetooth, sin reiniciar el GPS."""
+        ubicacion = self.gps.obtener_ubicacion()
+        if not ubicacion:
+            self.estado_gps.text = "GPS: Sin señal. Activá la ubicación en ajustes."
+            return
+        if RutasService.esta_siguiendo():
+            indicacion = RutasService.indicacion_actual(ubicacion, forzar=True)
+            if indicacion:
+                self._mostrar_indicacion(indicacion)
+        else:
+            self.estado_gps.text = "GPS: No hay ruta activa."
+
     def detener_ubicacion(self, instance=None):
+        """Detiene el GPS, el seguimiento activo y limpia las notificaciones."""
+        try:
+            RutasService.detener_seguimiento()
+            self._bloqueo_tiempo_llegada = False
+            self.bluetooth.send_command("B:0\n")
+        except Exception:
+            pass
         try:
             self.gps.detener()
-            self.estado_gps.text = "GPS: Detenido"
-            self.estado_gps.text_color = CREMA_CLARO
         except Exception:
-            self.estado_gps.text = "GPS: Detenido"
-            self.estado_gps.text_color = CREMA_CLARO
+            pass
+        self.estado_gps.text = "GPS: Detenido"
+        self.estado_gps.text_color = CREMA_CLARO
+        self.indicaciones.text = "Indicaciones: —"
+        NotificacionService.desactivar_modo_segundo_plano()
+        NotificacionService.cancelar()
 
     # ==================================================
     # FLUJO DE NAVEGACIÓN Y GUARDADO DENTRO DE LA APP
@@ -379,6 +431,14 @@ class NavegacionScreen(MDBoxLayout):
             self.iniciar_ubicacion()
 
         ubicacion = self.gps.obtener_ubicacion()
+        if not ubicacion:
+            self._calculo_pendiente_destino = destino
+            self._calculo_pendiente_guardar = guardar_nombre
+            self.estado_gps.text = f"GPS: Esperando señal satelital para guiar hacia «{destino}»…"
+            self.estado_gps.text_color = DORADO_APAGADO
+            self.indicaciones.text = f"Indicaciones: calculando ruta a «{destino}» en cuanto haya GPS..."
+            return
+
         self.estado_gps.text = f"Calculando indicaciones hacia «{destino}»…"
         self.estado_gps.text_color = VERDE_ESTADO
 
@@ -390,36 +450,109 @@ class NavegacionScreen(MDBoxLayout):
     def _procesar_ruta_recibida(self, ruta, error, destino, guardar_nombre):
         ubicacion = self.gps.obtener_ubicacion()
         if error or not ruta:
-            # Fallback si no hay conexión a internet: crear ruta directa basada en coordenadas
-            self.estado_gps.text = f"GPS: {error or 'Sin conexión para mapa online'}. Usando navegación directa."
-            ruta = RutasService.guardar_ruta_destino(guardar_nombre or f"Ruta a {destino}", destino, ubicacion)
-            if ubicacion:
-                indicacion = f"Indicaciones: rumbo hacia «{destino}». Avanzá manteniendo tu dirección."
-                self._mostrar_indicacion(indicacion)
+            # Fallback si no hay conexión a internet
+            self.estado_gps.text = f"GPS: Sin conexión. Navegación directa hacia «{destino}»."
+            indicacion = f"Indicaciones: avanzá hacia «{destino}». Sin mapa online disponible."
+            self._mostrar_indicacion(indicacion)
             return
 
+        # Guardar la ruta OSRM completa al JSON inmediatamente si el usuario dijo Sí
         if guardar_nombre:
             ruta["nombre"] = guardar_nombre
             rutas = RutasService.cargar_rutas()
+            # Evitar duplicados del mismo nombre
+            rutas = [r for r in rutas if r.get("nombre") != guardar_nombre]
             rutas.append(ruta)
             RutasService._guardar_rutas(rutas)
             puntos_cant = len(ruta.get("puntos", []))
-            self.estado_gps.text = f"Ruta «{guardar_nombre}» guardada ({puntos_cant} puntos cada 8m)."
-            # Activar grabación para seguir sumando puntos reales del usuario
-            RutasService.iniciar_grabacion(guardar_nombre)
+            self.estado_gps.text = f"Ruta «{guardar_nombre}» guardada ({puntos_cant} puntos)."
         else:
-            self.estado_gps.text = f"Navegando hacia «{destino}»."
-
-        # Iniciar seguimiento paso a paso directamente dentro de la app
-        indicacion = RutasService.iniciar_seguimiento(ruta, ubicacion)
-        if ruta.get("pasos") and len(ruta["pasos"]) > 0:
-            primer_paso = ruta["pasos"][0].get("instruccion", "")
-            if primer_paso:
-                self._mostrar_indicacion(f"Indicaciones: {primer_paso}")
-        elif indicacion:
-            self._mostrar_indicacion(indicacion)
+            self.estado_gps.text = "GPS: Ruta iniciada (sin guardar)."
 
         self.estado_gps.text_color = VERDE_ESTADO
+
+        # ── Nombre real del destino encontrado (siempre se muestra, sea exacto o similar) ──
+        # destino_completo viene del geocoder: puede ser "Farmacia del Sol, Belgrano 450 (a 600 m)"
+        # Si no existe ese campo, usar el texto que buscó el usuario
+        nombre_encontrado = ruta.get("destino_completo") or ruta.get("destino") or destino
+
+        # Tiempo estimado de caminata
+        tiempo_texto = ruta.get("tiempo_texto", "")
+        dist_texto = ruta.get("distancia_texto", "")
+        info_tiempo = f"Llegarás en {tiempo_texto} ({dist_texto})" if tiempo_texto else ""
+
+        # ── Anuncio inicial: destino real + tiempo estimado ──
+        # Siempre se anuncia aunque el nombre sea idéntico al buscado,
+        # para que el ciego confirme que la app entendió bien.
+        anuncio_destino = f"Yendo a: {nombre_encontrado}."
+        if info_tiempo:
+            anuncio_inicial = f"Indicaciones: {anuncio_destino} {info_tiempo}. Iniciando..."
+        else:
+            anuncio_inicial = f"Indicaciones: {anuncio_destino} Iniciando..."
+
+        # Iniciar seguimiento paso a paso dentro de la app
+        indicacion = RutasService.iniciar_seguimiento(ruta, ubicacion)
+        primer_paso = ""
+        if ruta.get("pasos") and len(ruta["pasos"]) > 0:
+            primer_paso = ruta["pasos"][0].get("instruccion", "")
+
+        # Mostrar anuncio inicial (destino + tiempo) durante 6 s, luego el primer paso
+        self._bloqueo_tiempo_llegada = True
+        self._mostrar_indicacion(anuncio_inicial)
+
+        def _desbloquear_y_mostrar_primer_paso(dt):
+            self._bloqueo_tiempo_llegada = False
+            guia = primer_paso or indicacion or "Avanzá según las indicaciones."
+            self._mostrar_indicacion(f"Indicaciones: {guia}")
+
+        Clock.schedule_once(_desbloquear_y_mostrar_primer_paso, 6.0)
+
+    def _recalcular_por_desvio(self, ubicacion, dist_desvio):
+        """Si el usuario se desvía más de 100 m, recalcula la ruta automáticamente."""
+        self._recalculando_desvio = True
+        ruta_act = RutasService._ruta_en_seguimiento
+        destino_nombre = ruta_act.get("destino", "") or ruta_act.get("nombre", "")
+        self.estado_gps.text = f"GPS: Desvío de {dist_desvio:.0f} m. Recalculando ruta…"
+        self.estado_gps.text_color = DORADO_APAGADO
+
+        def _al_recalcular(nueva_ruta, error):
+            self._recalculando_desvio = False
+            if nueva_ruta and not error:
+                RutasService.iniciar_seguimiento(nueva_ruta, ubicacion)
+                primer_paso = nueva_ruta["pasos"][0].get("instruccion", "") if nueva_ruta.get("pasos") else ""
+                msg = f"Ruta actualizada por desvío de {dist_desvio:.0f} m. {primer_paso or 'Seguí las nuevas indicaciones.'}"
+                self._mostrar_indicacion(msg)
+                self.estado_gps.text = "GPS: Ruta actualizada."
+                self.estado_gps.text_color = VERDE_ESTADO
+            else:
+                # Si no hay internet, indicar rumbo hacia el punto más cercano de la ruta guardada
+                _idx, punto_cercano = RutasService.punto_mas_cercano(ruta_act, ubicacion)
+                rumbo = RutasService.rumbo_cardinal(ubicacion, punto_cercano)
+                msg = f"Ruta actualizada: te desviaste {dist_desvio:.0f} m. Acercate hacia el {rumbo} para retomar."
+                self._mostrar_indicacion(msg)
+
+        RutasService.obtener_ruta_online(destino_nombre, ubicacion, _al_recalcular)
+
+    def explorar_entorno(self, _instance=None):
+        """Modo Exploración: anuncia calle y altura o lugar actual para personas ciegas."""
+        if not self.gps.activo:
+            self.iniciar_ubicacion()
+        ubicacion = self.gps.obtener_ubicacion()
+        self.estado_gps.text = "GPS: Identificando calle y entorno actual…"
+        self.estado_gps.text_color = VERDE_ESTADO
+
+        def _al_explorar(resultado, error):
+            def _ui(dt):
+                if resultado:
+                    self._mostrar_indicacion(resultado)
+                    self.estado_gps.text = "GPS: Exploración completada."
+                else:
+                    msg = error or "No se pudo obtener la dirección actual."
+                    self._mostrar_indicacion(f"Indicaciones: {msg}")
+                    self.estado_gps.text = f"GPS: {msg}"
+            Clock.schedule_once(_ui, 0)
+
+        RutasService.explorar_ubicacion_actual(ubicacion, _al_explorar)
 
     # ==================================================
     # COMANDOS DE VOZ GENERALES EN NAVEGACIÓN
@@ -434,6 +567,11 @@ class NavegacionScreen(MDBoxLayout):
             self.estado_gps.text = f"GPS: {error or 'No se reconoció comando.'}"
             return
         comando = texto.lower().strip()
+
+        # Modo Exploración
+        if any(frase in comando for frase in ("dónde estoy", "donde estoy", "explorar", "mi ubicación", "ubicación actual", "mi posicion")):
+            self.explorar_entorno()
+            return
 
         # Si el comando es un destino hacia donde ir
         if any(comando.startswith(p) for p in ("ir a", "ir al", "ir a la", "navegar a", "navegar al", "cómo llegar a", "llegar a")):
@@ -520,6 +658,20 @@ class NavegacionScreen(MDBoxLayout):
 
     def _mostrar_indicacion(self, texto):
         self.indicaciones.text = texto
+        texto_limpio = texto.replace("Indicaciones: ", "").strip()
+
+        tiempo_est = None
+        ubicacion = self.gps.obtener_ubicacion()
+        if RutasService.esta_siguiendo() and ubicacion:
+            tiempo_est, _dist = RutasService.tiempo_restante_texto(ubicacion)
+
+        if tiempo_est:
+            titulo = f"Centinela • Llegada en {tiempo_est}"
+            cuerpo = f"{texto_limpio} (Tiempo estimado: {tiempo_est})"
+            NotificacionService.mostrar_indicacion(titulo, cuerpo, tiempo_estimado=tiempo_est)
+        else:
+            NotificacionService.mostrar_indicacion("Centinela Navegación", texto_limpio)
+
         if texto != self.ultima_indicacion:
             self.ultima_indicacion = texto
             self.bluetooth.send_command(f"I:{texto}\n")
@@ -529,7 +681,7 @@ class NavegacionScreen(MDBoxLayout):
     # ==================================================
 
     def actualizar_gps(self, dt):
-        """Respaldo de UI: actualiza etiquetas si el callback directo no llegó."""
+        """Reloj de 1 segundo: actualiza coords y emite indicación continua durante navegación activa."""
         try:
             datos = self.gps.obtener_ubicacion()
             if not datos:
@@ -548,13 +700,15 @@ class NavegacionScreen(MDBoxLayout):
             if lon is not None:
                 self.longitud.text = f"Lon: {lon:.5f}"
 
-            if lat is not None and lon is not None:
-                indicacion = RutasService.indicacion_actual(datos)
-                if indicacion:
-                    self._mostrar_indicacion(indicacion)
-                self.estado_gps.text = "GPS: UBICACIÓN DISPONIBLE"
-                self.estado_gps.text_color = VERDE_ESTADO
+            if lat is not None and lon is not None and not self._bloqueo_tiempo_llegada:
+                if RutasService.esta_siguiendo():
+                    # Emitir siempre durante navegación (forzado cada ciclo de 1 seg)
+                    indicacion = RutasService.indicacion_actual(datos, forzar=True)
+                    if indicacion:
+                        self._mostrar_indicacion(indicacion)
+                else:
+                    self.estado_gps.text = "GPS: UBICACIÓN DISPONIBLE"
+                    self.estado_gps.text_color = VERDE_ESTADO
 
         except Exception:
             pass
-

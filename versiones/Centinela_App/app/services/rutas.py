@@ -1,7 +1,9 @@
+import difflib
 import json
 import math
 import ssl
 import threading
+import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import datetime
@@ -18,13 +20,16 @@ class RutasService:
     # Se llega a la esquina dentro de 8 m para no anticipar el giro y cortar
     # diagonalmente una cuadra.
     DISTANCIA_LLEGADA_METROS = 8
-    DISTANCIA_ACTUALIZACION_METROS = 5
+    # Distancia mínima de avance para recalcular indicaciones.
+    # 1 m es suficiente para no silenciar el GPS urbano.
+    DISTANCIA_ACTUALIZACION_METROS = 1
     ANGULO_GIRO_ESQUINA = 55
     _grabando = False
     _puntos_actuales = []
     _ruta_en_seguimiento = None
     _indice_siguiente = 0
     _ultima_ubicacion_seguimiento = None
+    _ultimo_timestamp_indicacion = 0  # timestamp de la última indicacion emitida
 
     @classmethod
     def interpolar_puntos_cada_8m(cls, puntos_base):
@@ -47,27 +52,324 @@ class RutasService:
         return puntos_densos
 
     @classmethod
-    def _generar_texto_paso(cls, tipo, modificador, calle, dist_m):
+    def _generar_texto_paso(cls, tipo, modificador, calle, dist_m, rumbo=None):
         calle_str = f" por {calle}" if calle else ""
+        rumbo_str = f" hacia el {rumbo}" if rumbo else ""
         dist_str = f"{dist_m:.0f} m"
         if tipo == "depart":
-            return f"Iniciá el recorrido{calle_str} por {dist_str}."
+            return f"Iniciá el recorrido{calle_str}{rumbo_str} por {dist_str}."
         elif tipo == "arrive":
             return "Llegaste a tu destino."
         elif "right" in modificador:
-            return f"Girá a la derecha{calle_str} y avanzá {dist_str}."
+            return f"Girá a la derecha{calle_str} y avanzá {dist_str}{rumbo_str}."
         elif "left" in modificador:
-            return f"Girá a la izquierda{calle_str} y avanzá {dist_str}."
+            return f"Girá a la izquierda{calle_str} y avanzá {dist_str}{rumbo_str}."
         elif "uturn" in modificador:
-            return f"Da la vuelta en U{calle_str} y avanzá {dist_str}."
+            return f"Da la vuelta en U{calle_str} y avanzá {dist_str}{rumbo_str}."
         else:
-            return f"Avanzá {dist_str}{calle_str}."
+            return f"Avanzá {dist_str}{calle_str}{rumbo_str}."
+
+    @classmethod
+    def explorar_ubicacion_actual(cls, ubicacion, callback):
+        """Modo Exploración: obtiene la calle, altura o lugar donde se encuentra el usuario."""
+        def _tarea():
+            try:
+                lat = None
+                lon = None
+                if ubicacion and "latitud" in ubicacion:
+                    lat = ubicacion["latitud"]
+                    lon = ubicacion["longitud"]
+                else:
+                    from services.gps import UbicacionService
+                    puntual = UbicacionService.obtener_ubicacion_actual()
+                    if puntual:
+                        lat, lon = puntual
+
+                if lat is None or lon is None:
+                    callback(None, "Sin señal GPS para explorar el entorno.")
+                    return
+
+                ctx = ssl._create_unverified_context()
+                headers = {"User-Agent": "CentinelaApp/1.0 (centinela.app@gmail.com)"}
+                # zoom=18 = nivel calle, addressdetails=1 para todos los campos
+                url = (
+                    f"https://nominatim.openstreetmap.org/reverse"
+                    f"?lat={lat}&lon={lon}&format=json&zoom=18&addressdetails=1&accept-language=es"
+                )
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, context=ctx, timeout=8) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+
+                address = data.get("address", {})
+
+                # 1. Lugar específico (comercio, edificio, poi)
+                lugar = (
+                    address.get("amenity")
+                    or address.get("shop")
+                    or address.get("tourism")
+                    or address.get("leisure")
+                    or address.get("building")
+                    or ""
+                )
+
+                # 2. Vía (calle, avenida, peatonal)
+                calle = (
+                    address.get("road")
+                    or address.get("pedestrian")
+                    or address.get("path")
+                    or address.get("footway")
+                    or ""
+                )
+                numero = address.get("house_number", "")
+
+                # 3. Barrio / localidad
+                barrio = (
+                    address.get("suburb")
+                    or address.get("neighbourhood")
+                    or address.get("quarter")
+                    or ""
+                )
+                ciudad = (
+                    address.get("city")
+                    or address.get("town")
+                    or address.get("village")
+                    or address.get("county")
+                    or ""
+                )
+
+                partes = []
+                if lugar:
+                    partes.append(lugar)
+                if calle:
+                    partes.append(f"{calle} {numero}".strip())
+                if barrio:
+                    partes.append(barrio)
+                if ciudad and ciudad not in " ".join(partes):
+                    partes.append(ciudad)
+
+                if partes:
+                    resultado = ", ".join(p for p in partes if p)
+                else:
+                    # Fallback: primera parte del display_name
+                    resultado = data.get("display_name", "Ubicación detectada").split(",")[0]
+
+                callback(f"Estás en: {resultado}", None)
+            except Exception as e:
+                callback(None, f"No se pudo obtener la dirección: {e}")
+
+        threading.Thread(target=_tarea, daemon=True).start()
+
+    @staticmethod
+    def _remover_tildes(texto):
+        if not texto:
+            return ""
+        return "".join(
+            c for c in unicodedata.normalize("NFD", texto)
+            if unicodedata.category(c) != "Mn"
+        )
+
+    @classmethod
+    def _normalizar_consulta_destino(cls, texto):
+        """Genera variantes inteligentes de búsqueda (limpieza, singulares, errores comunes y cercanía)."""
+        texto_limpio = texto.strip()
+        prefijos = (
+            "ir a la", "ir al", "ir a", "a la", "al", "a el", "la", "el", "los", "las",
+            "cómo llegar a", "como llegar a", "como ir a", "cómo ir a", "llegar a",
+            "navegar a", "navegar al", "ir hacia", "buscar", "dónde queda", "donde queda",
+        )
+        for prefijo in prefijos:
+            if texto_limpio.lower().startswith(f"{prefijo} "):
+                texto_limpio = texto_limpio[len(prefijo):].strip()
+                break
+
+        sin_tildes = cls._remover_tildes(texto_limpio)
+        variantes = [texto_limpio]
+        if sin_tildes.lower() != texto_limpio.lower():
+            variantes.append(sin_tildes)
+
+        # Corrección de errores comunes / sinónimos / categorías
+        errores_y_sinonimos = {
+            "farmasia": "farmacia",
+            "farmasias": "farmacia",
+            "farmacias": "farmacia",
+            "estasion": "estacion",
+            "super": "supermercado",
+            "supermercados": "supermercado",
+            "hipemercado": "hipermercado",
+            "hiper": "hipermercado",
+            "kiosko": "kiosco",
+            "kioskos": "kiosco",
+            "quiosco": "kiosco",
+            "quioscos": "kiosco",
+            "panaderias": "panaderia",
+            "panaderías": "panaderia",
+            "heladerias": "heladeria",
+            "heladerías": "heladeria",
+            "carnicerias": "carniceria",
+            "carnicerías": "carniceria",
+            "ferreterias": "ferreteria",
+            "ferreterías": "ferreteria",
+            "librerias": "libreria",
+            "librerías": "libreria",
+            "pinturerias": "pintureria",
+            "pinturerías": "pintureria",
+            "zapaterias": "zapateria",
+            "zapaterías": "zapateria",
+            "plazas": "plaza",
+            "parques": "parque",
+            "hospitales": "hospital",
+            "sanatorios": "sanatorio",
+            "clinicas": "clinica",
+            "clínicas": "clinica",
+            "veterinarias": "veterinaria",
+            "ypf": "estacion ypf",
+            "shell": "estacion shell",
+            "axion": "estacion axion",
+            "nafta": "estacion de servicio",
+            "gasolinera": "estacion de servicio",
+            "cajero": "cajero automatico",
+            "banelco": "cajero banelco",
+            "link": "cajero red link",
+            "parada": "parada de colectivo",
+            "colectivo": "parada de colectivo",
+            "mcdonals": "mcdonald's",
+            "mcdonal": "mcdonald's",
+        }
+
+        palabras = texto_limpio.split()
+        palabras_corr = [errores_y_sinonimos.get(cls._remover_tildes(p).lower(), p) for p in palabras]
+        texto_corr = " ".join(palabras_corr)
+        if texto_corr.lower() != texto_limpio.lower() and texto_corr not in variantes:
+            variantes.append(texto_corr)
+
+        # Si son 2 palabras, agregar versión invertida (ej: "san martin plaza" -> "plaza san martin")
+        if len(palabras_corr) == 2:
+            invertido = f"{palabras_corr[1]} {palabras_corr[0]}"
+            if invertido not in variantes:
+                variantes.append(invertido)
+
+        # Si son más de 2 palabras, agregar también cada término significativo
+        for p in palabras_corr:
+            if len(p) >= 4 and p not in variantes and p.lower() not in ("calle", "avenida", "diagonal"):
+                variantes.append(p)
+
+        return variantes
+
+    @classmethod
+    def _calcular_similitud_texto(cls, busqueda, texto_candidato):
+        """Calcula el porcentaje de coincidencia entre el texto buscado y el candidato (0.0 a 1.0)."""
+        b = cls._remover_tildes(busqueda).lower().strip()
+        c = cls._remover_tildes(texto_candidato).lower().strip()
+        if not b or not c:
+            return 0.0
+        if b == c:
+            return 1.0
+        if b in c or c in b:
+            return 0.92
+
+        # SequenceMatcher de Python (Levenshtein difuso)
+        ratio = difflib.SequenceMatcher(None, b, c).ratio()
+
+        # Coincidencia por palabras / tokens (Jaccard)
+        b_words = set(b.split())
+        c_words = set(c.split())
+        if b_words and c_words:
+            inter = len(b_words & c_words)
+            union = len(b_words | c_words)
+            jaccard = inter / union if union > 0 else 0
+            if inter == len(b_words):  # Todas las palabras buscadas están en el candidato
+                return max(0.90, ratio)
+            return max(ratio, jaccard * 0.85)
+
+        return ratio
+
+    @classmethod
+    def _evaluar_mejor_candidato(cls, destino_buscado, lista_candidatos, lat_usr, lon_usr):
+        """
+        Evalúa y clasifica los candidatos combinando similitud de nombre y proximidad física.
+        Si no hay coincidencia exacta, selecciona el lugar con nombre más parecido y más cercano al usuario.
+        """
+        if not lista_candidatos:
+            return None
+
+        mejor_candidato = None
+        mejor_puntaje = -999999.0
+
+        for cand in lista_candidatos:
+            lat = cand.get("lat")
+            lon = cand.get("lon")
+            if lat is None or lon is None:
+                continue
+
+            dist_m = cls.distancia_metros(
+                {"latitud": lat_usr, "longitud": lon_usr},
+                {"latitud": lat, "longitud": lon}
+            )
+
+            # Nombre principal y nombre completo
+            nombre_corto = cand.get("name") or cand.get("nombre") or ""
+            nombre_largo = cand.get("display_name") or ""
+            categoria = cand.get("category") or cand.get("type") or ""
+
+            # Similitud textual con el nombre corto y largo
+            sim_c = cls._calcular_similitud_texto(destino_buscado, nombre_corto)
+            sim_l = cls._calcular_similitud_texto(destino_buscado, nombre_largo)
+            sim_cat = cls._calcular_similitud_texto(destino_buscado, categoria) * 0.75
+            similitud = max(sim_c, sim_l, sim_cat)
+
+            # Puntuación de proximidad (favorece fuertemente lugares caminables o cercanos)
+            if dist_m <= 300:
+                puntos_dist = 100.0
+            elif dist_m <= 1000:
+                puntos_dist = 90.0 - ((dist_m - 300) / 700) * 15.0  # 90 a 75
+            elif dist_m <= 5000:
+                puntos_dist = 75.0 - ((dist_m - 1000) / 4000) * 25.0  # 75 a 50
+            elif dist_m <= 25000:
+                puntos_dist = 50.0 - ((dist_m - 5000) / 20000) * 30.0  # 50 a 20
+            elif dist_m <= 80000:
+                puntos_dist = 20.0 - ((dist_m - 25000) / 55000) * 20.0  # 20 a 0
+            else:
+                # Penalización progresiva para resultados fuera de la región local
+                puntos_dist = -50.0 - min(100.0, (dist_m - 80000) / 10000)
+
+            # Puntuación combinada: 60% similitud de nombre + 40% cercanía geográfica
+            puntaje_total = (similitud * 100.0 * 0.60) + (puntos_dist * 0.40)
+
+            # Bonus si es coincidencia casi exacta de nombre
+            if similitud >= 0.88:
+                puntaje_total += 25.0
+
+            if puntaje_total > mejor_puntaje:
+                mejor_puntaje = puntaje_total
+                etiqueta = nombre_corto or nombre_largo.split(",")[0]
+                if dist_m < 1000:
+                    dist_texto = f"a {dist_m:.0f} m"
+                else:
+                    dist_texto = f"a {dist_m / 1000:.1f} km"
+
+                partes = [p.strip() for p in nombre_largo.split(",") if p.strip()]
+                calle_barrio = ""
+                if len(partes) > 1 and partes[1].lower() != etiqueta.lower():
+                    calle_barrio = f", {partes[1]}"
+
+                nombre_final = f"{etiqueta}{calle_barrio} ({dist_texto})"
+
+                mejor_candidato = {
+                    "lat": lat,
+                    "lon": lon,
+                    "nombre": nombre_final,
+                    "distancia_metros": dist_m,
+                    "similitud": similitud,
+                }
+
+        return mejor_candidato
 
     @classmethod
     def obtener_ruta_online(cls, destino_texto, ubicacion_actual, callback):
         """
-        Consulta en segundo plano el recorrido y pasos a pie usando geocodificación
-        y OSRM para devolver las indicaciones y puntos GPS cada 8 m directamente dentro de la app.
+        Consulta en segundo plano el recorrido y pasos a pie usando geocodificación difusa
+        inteligente (Photon + Nominatim) y selección por cercanía + similitud de nombre.
+        Si el nombre no es exacto, encuentra el lugar más similar y más cercano al usuario.
         """
         def _tarea():
             try:
@@ -78,31 +380,166 @@ class RutasService:
                     lon1 = ubicacion_actual["longitud"]
 
                 if lat1 is None or lon1 is None:
-                    # Intento de lectura puntual
                     from services.gps import UbicacionService
                     puntual = UbicacionService.obtener_ubicacion_actual()
                     if puntual:
                         lat1, lon1 = puntual
 
                 if lat1 is None or lon1 is None:
-                    callback(None, "Se requiere que el GPS obtenga una coordenada para calcular la ruta.")
+                    callback(None, "Esperando coordenadas GPS del teléfono para calcular la ruta.")
                     return
 
                 ctx = ssl._create_unverified_context()
                 headers = {"User-Agent": "CentinelaApp/1.0 (centinela.app@gmail.com)"}
-                query_encoded = urllib.parse.quote(destino_texto.strip())
-                geo_url = f"https://nominatim.openstreetmap.org/search?q={query_encoded}&format=json&limit=1"
-                req = urllib.request.Request(geo_url, headers=headers)
-                with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
-                    geo_data = json.loads(resp.read().decode("utf-8"))
+                # Primera variante = el texto exacto tal como lo escribió el usuario
+                variantes = cls._normalizar_consulta_destino(destino_texto)
+                texto_exacto = variantes[0]  # sin modificar
 
-                if not geo_data:
-                    callback(None, f"No se encontró la ubicación de «{destino_texto}».")
+                candidatos = []
+                candidatos_exactos = []  # solo los del nombre exacto
+                vistos = set()
+
+                def _agregar_candidato(lat_c, lon_c, nom_c, disp_c, tipo_c="", exacto=False):
+                    try:
+                        lat_f = float(lat_c)
+                        lon_f = float(lon_c)
+                        key = (round(lat_f, 5), round(lon_f, 5))
+                        entrada = {
+                            "lat": lat_f,
+                            "lon": lon_f,
+                            "name": nom_c or "",
+                            "display_name": disp_c or nom_c or "",
+                            "type": tipo_c or "",
+                        }
+                        if key not in vistos:
+                            vistos.add(key)
+                            candidatos.append(entrada)
+                        if exacto:
+                            candidatos_exactos.append(entrada)
+                    except Exception:
+                        pass
+
+                # ── PASO 1: búsqueda exacta del nombre tal como lo escribió el usuario ──
+                q_enc_ex = urllib.parse.quote(texto_exacto)
+                for url_ex in [
+                    f"https://photon.komoot.io/api/?q={q_enc_ex}&lat={lat1}&lon={lon1}&limit=10",
+                    (f"https://nominatim.openstreetmap.org/search?q={q_enc_ex}&format=json&limit=10"
+                     f"&viewbox={lon1-0.6},{lat1+0.6},{lon1+0.6},{lat1-0.6}&bounded=0"),
+                ]:
+                    try:
+                        req_ex = urllib.request.Request(url_ex, headers=headers)
+                        with urllib.request.urlopen(req_ex, context=ctx, timeout=5) as resp_ex:
+                            data_ex = json.loads(resp_ex.read().decode("utf-8"))
+                            # Photon devuelve {"features":[...]}, Nominatim devuelve lista
+                            items_ex = data_ex.get("features", data_ex) if isinstance(data_ex, dict) else data_ex
+                            for it in items_ex:
+                                if isinstance(it, dict) and "geometry" in it:
+                                    # formato Photon
+                                    coords = it.get("geometry", {}).get("coordinates", [])
+                                    if len(coords) >= 2:
+                                        props = it.get("properties", {})
+                                        nom = props.get("name", "")
+                                        calle = props.get("street", "")
+                                        ciudad = props.get("city", props.get("county", ""))
+                                        disp = f"{nom}, {calle}, {ciudad}".strip(", ")
+                                        _agregar_candidato(coords[1], coords[0], nom, disp,
+                                                           props.get("osm_value", ""), exacto=True)
+                                elif isinstance(it, dict) and "lat" in it:
+                                    # formato Nominatim
+                                    _agregar_candidato(
+                                        it.get("lat"), it.get("lon"),
+                                        it.get("name", ""), it.get("display_name", ""),
+                                        it.get("type", ""), exacto=True
+                                    )
+                    except Exception:
+                        pass
+
+                # ── PASO 2: Si el nombre exacto tuvo resultados suficientes, usarlos directamente ──
+                # Solo buscamos con variantes difusas si el exacto no devolvió nada
+                if not candidatos_exactos:
+                    # Búsqueda con todas las variantes (incluyendo correcciones ortográficas y sinónimos)
+                    for q in variantes[1:]:  # Saltar texto_exacto, ya consultado
+                        q_enc = urllib.parse.quote(q)
+                        photon_url = f"https://photon.komoot.io/api/?q={q_enc}&lat={lat1}&lon={lon1}&limit=15"
+                        try:
+                            req_ph = urllib.request.Request(photon_url, headers=headers)
+                            with urllib.request.urlopen(req_ph, context=ctx, timeout=5) as resp_ph:
+                                ph_data = json.loads(resp_ph.read().decode("utf-8"))
+                                for feat in ph_data.get("features", []):
+                                    coords = feat.get("geometry", {}).get("coordinates", [])
+                                    if len(coords) >= 2:
+                                        props = feat.get("properties", {})
+                                        nom = props.get("name", "")
+                                        calle = props.get("street", "")
+                                        ciudad = props.get("city", props.get("county", ""))
+                                        disp = f"{nom}, {calle}, {ciudad}".strip(", ")
+                                        tipo = props.get("osm_value", props.get("type", ""))
+                                        _agregar_candidato(coords[1], coords[0], nom, disp, tipo)
+                        except Exception:
+                            pass
+
+                    for q in variantes[1:]:
+                        q_enc = urllib.parse.quote(q)
+                        geo_url = (
+                            f"https://nominatim.openstreetmap.org/search?q={q_enc}&format=json&limit=10"
+                            f"&viewbox={lon1-0.6},{lat1+0.6},{lon1+0.6},{lat1-0.6}&bounded=0"
+                        )
+                        try:
+                            req_nom = urllib.request.Request(geo_url, headers=headers)
+                            with urllib.request.urlopen(req_nom, context=ctx, timeout=5) as resp_nom:
+                                res_nom = json.loads(resp_nom.read().decode("utf-8"))
+                                for item in res_nom:
+                                    _agregar_candidato(
+                                        item.get("lat"),
+                                        item.get("lon"),
+                                        item.get("name", ""),
+                                        item.get("display_name", ""),
+                                        item.get("type", "")
+                                    )
+                        except Exception:
+                            pass
+
+                # ── PASO 3: Si aún no hay candidatos, probar búsqueda global sin coordenadas ──
+                if not candidatos:
+                    q_enc = urllib.parse.quote(texto_exacto)
+                    for url_gl in [
+                        f"https://photon.komoot.io/api/?q={q_enc}&limit=10",
+                        f"https://nominatim.openstreetmap.org/search?q={q_enc}&format=json&limit=10",
+                    ]:
+                        try:
+                            req_g = urllib.request.Request(url_gl, headers=headers)
+                            with urllib.request.urlopen(req_g, context=ctx, timeout=5) as resp_g:
+                                data_g = json.loads(resp_g.read().decode("utf-8"))
+                                items_g = data_g.get("features", data_g) if isinstance(data_g, dict) else data_g
+                                for it in items_g:
+                                    if isinstance(it, dict) and "geometry" in it:
+                                        coords = it.get("geometry", {}).get("coordinates", [])
+                                        if len(coords) >= 2:
+                                            props = it.get("properties", {})
+                                            nom = props.get("name", "")
+                                            _agregar_candidato(coords[1], coords[0], nom, nom,
+                                                               props.get("osm_value", ""))
+                                    elif isinstance(it, dict) and "lat" in it:
+                                        _agregar_candidato(
+                                            it.get("lat"), it.get("lon"),
+                                            it.get("name", ""), it.get("display_name", ""),
+                                            it.get("type", "")
+                                        )
+                        except Exception:
+                            pass
+
+                # Evaluar y seleccionar el lugar con nombre más similar y más cercano al usuario
+                # Preferir candidatos exactos si existen
+                pool = candidatos_exactos if candidatos_exactos else candidatos
+                mejor = cls._evaluar_mejor_candidato(destino_texto, pool, lat1, lon1)
+
+                if not mejor:
+                    callback(None, f"No se encontró ningún lugar cercano similar a «{destino_texto}».")
                     return
 
-                lat2 = float(geo_data[0]["lat"])
-                lon2 = float(geo_data[0]["lon"])
-                nombre_encontrado = geo_data[0].get("display_name", destino_texto).split(",")[0]
+                lat2 = mejor["lat"]
+                lon2 = mejor["lon"]
+                nombre_encontrado = mejor["nombre"]
 
                 # Consultar ruta a pie OSRM
                 osrm_url = f"https://router.project-osrm.org/route/v1/foot/{lon1},{lat1};{lon2},{lat2}?overview=full&geometries=geojson&steps=true"
@@ -129,13 +566,24 @@ class RutasService:
                         modificador = maneuver.get("modifier", "")
                         nombre_calle = step.get("name", "")
                         dist_m = step.get("distance", 0)
+                        bearing_after = maneuver.get("bearing_after")
+                        rumbo_paso = cls.rumbo_cuadra_desde_grados(bearing_after) if bearing_after is not None else None
                         pasos.append({
                             "tipo": tipo,
                             "modificador": modificador,
                             "calle": nombre_calle,
                             "distancia": dist_m,
-                            "instruccion": cls._generar_texto_paso(tipo, modificador, nombre_calle, dist_m),
+                            "rumbo": rumbo_paso,
+                            "instruccion": cls._generar_texto_paso(tipo, modificador, nombre_calle, dist_m, rumbo_paso),
                         })
+
+                duracion_seg = float(primera_ruta.get("duration", 0))
+                if duracion_seg <= 0 and distancia_total > 0:
+                    # 1 min cada 75 m = 1.25 m/s ≈ promedio real de una persona que camina despacio
+                    duracion_seg = distancia_total / 1.25
+
+                tiempo_str = cls.formatear_tiempo_caminata(duracion_seg)
+                dist_str = cls.formatear_distancia(distancia_total)
 
                 ruta = {
                     "nombre": f"Ruta a {destino_texto}",
@@ -145,12 +593,37 @@ class RutasService:
                     "puntos": puntos,
                     "pasos": pasos,
                     "distancia_metros": distancia_total,
+                    "duracion_segundos": duracion_seg,
+                    "tiempo_texto": tiempo_str,
+                    "distancia_texto": dist_str,
                 }
                 callback(ruta, None)
             except Exception as e:
                 callback(None, f"Error en cálculo de ruta: {e}")
 
         threading.Thread(target=_tarea, daemon=True).start()
+
+    @staticmethod
+    def formatear_tiempo_caminata(segundos):
+        minutos = int(round(segundos / 60))
+        if minutos < 1:
+            return "menos de 1 minuto"
+        elif minutos == 1:
+            return "1 minuto a pie"
+        elif minutos < 60:
+            return f"{minutos} min a pie"
+        else:
+            horas = minutos // 60
+            mins_rest = minutos % 60
+            if mins_rest > 0:
+                return f"{horas} h {mins_rest} min a pie"
+            return f"{horas} h a pie"
+
+    @staticmethod
+    def formatear_distancia(metros):
+        if metros < 1000:
+            return f"{metros:.0f} m"
+        return f"{metros/1000:.1f} km"
 
     @classmethod
     def iniciar_grabacion(cls, nombre):
@@ -252,33 +725,170 @@ class RutasService:
         return ruta
 
     @classmethod
+    def invertir_ruta(cls, ruta):
+        """Devuelve una copia invertida de la ruta (trayecto de vuelta)."""
+        if not ruta or not ruta.get("puntos"):
+            return ruta
+        puntos_inv = list(reversed(ruta["puntos"]))
+        nombre_orig = ruta.get("nombre", "Ruta")
+
+        # Invertir el nombre si tiene separadores ("Casa a Trabajo" -> "Trabajo a Casa")
+        nombre_inv = None
+        for sep in (" a ", " -> ", " - ", " hacia ", " hasta "):
+            if sep in nombre_orig:
+                partes = nombre_orig.split(sep, 1)
+                nombre_inv = f"{partes[1].strip()}{sep}{partes[0].strip()}"
+                break
+        if not nombre_inv:
+            if nombre_orig.lower().startswith("vuelta de ") or nombre_orig.lower().startswith("vuelta: "):
+                nombre_inv = nombre_orig.replace("Vuelta de ", "").replace("Vuelta: ", "")
+            else:
+                nombre_inv = f"Vuelta: {nombre_orig}"
+
+        return {
+            "nombre": nombre_inv,
+            "destino": ruta.get("origen", "Inicio de ruta"),
+            "origen": ruta.get("destino", "Destino"),
+            "creada": datetime.now().isoformat(timespec="seconds"),
+            "puntos": puntos_inv,
+            "es_invertida": True,
+        }
+
+    @classmethod
+    def buscar_ruta_bidireccional(cls, consulta, ubicacion_actual=None):
+        """
+        Busca inteligentemente entre las rutas guardadas al derecho o al revés.
+        Si el usuario dice 'Trabajo a Casa' o solo 'Casa' estando cerca del Trabajo,
+        invierte automáticamente la ruta 'Casa a Trabajo' para guiarlo de regreso.
+        """
+        rutas = cls.cargar_rutas()
+        if not rutas:
+            return None
+
+        texto = (consulta or "").strip().lower()
+        for prefijo in ("ir a la", "ir al", "ir a", "volver a la", "volver al", "volver a", "volver por", "cómo llegar a", "llegar a", "navegar a", "retomar ruta"):
+            if texto.startswith(prefijo):
+                texto = texto[len(prefijo):].strip()
+                break
+
+        if not texto:
+            return rutas[-1]
+
+        # 1. Búsqueda exacta / parcial en nombres de rutas
+        for ruta in reversed(rutas):
+            nombre = ruta.get("nombre", "").lower()
+            puntos = ruta.get("puntos", [])
+            if not puntos:
+                continue
+
+            # Detectar partes del nombre (origen y destino)
+            partes = []
+            for sep in (" a ", " - ", " -> ", " hacia ", " hasta "):
+                if sep in nombre:
+                    partes = [p.strip() for p in nombre.split(sep, 1)]
+                    break
+
+            if partes and len(partes) == 2:
+                origen_tag, destino_tag = partes[0], partes[1]
+                # Si el usuario pide "origen a destino" (ej. Casa a Trabajo)
+                if texto == f"{origen_tag} a {destino_tag}" or texto == f"{origen_tag} - {destino_tag}" or texto == destino_tag:
+                    return ruta
+                # Si el usuario pide "destino a origen" (ej. Trabajo a Casa o solo Casa)
+                elif texto == f"{destino_tag} a {origen_tag}" or texto == f"{destino_tag} - {origen_tag}" or texto == origen_tag:
+                    return cls.invertir_ruta(ruta)
+
+            # Si coincide con el nombre directo
+            if texto in nombre or nombre in texto:
+                # Si tenemos ubicación actual, verificar si está más cerca del final (destino) para invertir
+                if ubicacion_actual and len(puntos) >= 2:
+                    dist_inicio = cls.distancia_metros(ubicacion_actual, puntos[0])
+                    dist_fin = cls.distancia_metros(ubicacion_actual, puntos[-1])
+                    if dist_fin < dist_inicio and dist_fin < 150:
+                        return cls.invertir_ruta(ruta)
+                return ruta
+
+        # 2. Si no hubo coincidencia por nombre, buscar la ruta más cercana a la ubicación actual
+        if ubicacion_actual:
+            mejor_ruta = None
+            menor_dist = float("inf")
+            debe_invertir = False
+            for ruta in rutas:
+                puntos = ruta.get("puntos", [])
+                if not puntos:
+                    continue
+                _idx, punto_cercano = cls.punto_mas_cercano(ruta, ubicacion_actual)
+                if punto_cercano:
+                    dist = cls.distancia_metros(ubicacion_actual, punto_cercano)
+                    if dist < menor_dist:
+                        menor_dist = dist
+                        mejor_ruta = ruta
+                        dist_inicio = cls.distancia_metros(ubicacion_actual, puntos[0])
+                        dist_fin = cls.distancia_metros(ubicacion_actual, puntos[-1])
+                        debe_invertir = dist_fin < dist_inicio
+            if mejor_ruta and menor_dist < 100:
+                return cls.invertir_ruta(mejor_ruta) if debe_invertir else mejor_ruta
+
+        return rutas[-1]
+
+    @classmethod
     def esta_siguiendo(cls):
         return cls._ruta_en_seguimiento is not None
 
     @classmethod
-    def buscar_ruta(cls, nombre):
-        """Busca una ruta por nombre; si está vacío devuelve la última."""
-        rutas = cls.cargar_rutas()
-        if not rutas:
-            return None
-        consulta = (nombre or "").strip().lower()
-        if not consulta:
-            return rutas[-1]
-        for ruta in reversed(rutas):
-            nombre_ruta = ruta.get("nombre", "").lower()
-            if consulta == nombre_ruta or consulta in nombre_ruta:
-                return ruta
-        return None
+    def tiempo_restante_texto(cls, ubicacion):
+        """Calcula el tiempo restante de caminata y distancia hasta el destino final."""
+        ruta = cls._ruta_en_seguimiento
+        if not ruta or not ubicacion:
+            return None, 0
+        puntos = ruta.get("puntos", [])
+        if not puntos:
+            return None, 0
+        idx = min(getattr(cls, "_indice_siguiente", 0), len(puntos) - 1)
+        # Distancia desde ubicación actual al punto de la esquina/siguiente
+        dist_total = cls.distancia_metros(ubicacion, puntos[idx])
+        # Sumar los tramos restantes de la ruta
+        for i in range(idx, len(puntos) - 1):
+            dist_total += cls.distancia_metros(puntos[i], puntos[i + 1])
+
+        # 1 min cada 75 m → 1.5 min por 0.1 km (rango natural 1-2 min/0.1km)
+        segundos = dist_total / 1.25
+        return cls.formatear_tiempo_caminata(segundos), dist_total
 
     @classmethod
-    def iniciar_seguimiento(cls, ruta, ubicacion):
+    def buscar_ruta(cls, nombre):
+        """Compatibilidad con búsquedas simples."""
+        return cls.buscar_ruta_bidireccional(nombre)
+
+    @classmethod
+    def iniciar_seguimiento(cls, ruta, ubicacion, auto_direccion=True):
+        """
+        Inicia el seguimiento desde cualquier punto del camino más cercano.
+        Si el usuario se encuentra alejado del camino, la primera instrucción
+        lo guía con rumbo y distancia directamente hacia el punto de entrada.
+        """
         puntos = ruta.get("puntos", []) if ruta else []
         if not puntos or ubicacion is None:
             return None
-        indice, _punto = cls.punto_mas_cercano(ruta, ubicacion)
+
+        # Si el usuario está al final del recorrido y no se invirtió, invertir automáticamente
+        if auto_direccion and len(puntos) >= 2:
+            dist_inicio = cls.distancia_metros(ubicacion, puntos[0])
+            dist_fin = cls.distancia_metros(ubicacion, puntos[-1])
+            if dist_fin < dist_inicio and dist_fin < 40 and not ruta.get("es_invertida"):
+                ruta = cls.invertir_ruta(ruta)
+                puntos = ruta["puntos"]
+
+        indice, punto_cercano = cls.punto_mas_cercano(ruta, ubicacion)
         cls._ruta_en_seguimiento = ruta
         cls._indice_siguiente = min(indice or 0, len(puntos) - 1)
         cls._ultima_ubicacion_seguimiento = None
+
+        dist_al_camino = cls.distancia_metros(ubicacion, punto_cercano)
+        if dist_al_camino > cls.DISTANCIA_LLEGADA_METROS:
+            rumbo_entrada = cls.rumbo_cardinal(ubicacion, punto_cercano)
+            nombre_ruta = ruta.get("nombre", "Ruta")
+            return f"Indicaciones: acercate {dist_al_camino:.0f} m hacia el {rumbo_entrada} para entrar a «{nombre_ruta}»."
+
         return cls.indicacion_actual(ubicacion, forzar=True)
 
     @classmethod
@@ -289,7 +899,8 @@ class RutasService:
 
     @classmethod
     def indicacion_actual(cls, ubicacion, forzar=False):
-        """Guía por tramos rectos y anuncia cada esquina, no cada punto GPS."""
+        """Guía por tramos rectos y anuncia cada esquina con rumbo cardinal y distancia."""
+        import time
         ruta = cls._ruta_en_seguimiento
         if ruta is None or ubicacion is None:
             return None
@@ -298,13 +909,19 @@ class RutasService:
             cls.detener_seguimiento()
             return None
 
+        ahora = time.time()
+        # Forzar actualización si pasaron más de 3 segundos (GPS quieto)
+        por_tiempo = (ahora - cls._ultimo_timestamp_indicacion) >= 3.0
+
         rumbo_avance = None
         if cls._ultima_ubicacion_seguimiento is not None:
             avance = cls.distancia_metros(cls._ultima_ubicacion_seguimiento, ubicacion)
-            if avance < cls.DISTANCIA_ACTUALIZACION_METROS and not forzar:
+            if avance < cls.DISTANCIA_ACTUALIZACION_METROS and not forzar and not por_tiempo:
                 return None
-            rumbo_avance = cls.rumbo_grados(cls._ultima_ubicacion_seguimiento, ubicacion)
+            if avance >= 0.5:
+                rumbo_avance = cls.rumbo_grados(cls._ultima_ubicacion_seguimiento, ubicacion)
         cls._ultima_ubicacion_seguimiento = dict(ubicacion)
+        cls._ultimo_timestamp_indicacion = ahora
 
         indice_esquina, rumbo_despues = cls._proxima_esquina(puntos, cls._indice_siguiente)
         destino = puntos[indice_esquina]
@@ -318,21 +935,32 @@ class RutasService:
         if indice_esquina == len(puntos) - 1 and distancia <= cls.DISTANCIA_LLEGADA_METROS:
             nombre = ruta.get("nombre", "Ruta")
             cls.detener_seguimiento()
-            return f"Indicaciones: llegaste al final de «{nombre}»."
+            return f"Indicaciones: ¡Llegaste a tu destino en «{nombre}»!"
 
         rumbo_objetivo_grados = cls._rumbo_del_tramo(puntos, cls._indice_siguiente)
         rumbo = cls.rumbo_cuadra_desde_grados(rumbo_objetivo_grados)
+
+        # Determinar si hay nombre de calle disponible en los pasos
+        calle_actual = ""
+        pasos = ruta.get("pasos", [])
+        if pasos:
+            for p in pasos:
+                if p.get("calle"):
+                    calle_actual = p["calle"]
+                    break
+        calle_str = f" por {calle_actual}" if calle_actual else ""
+
         if rumbo_avance is not None:
             diferencia = abs((rumbo_avance - rumbo_objetivo_grados + 180) % 360 - 180)
             if diferencia > 67.5:
                 rumbo_real = cls.rumbo_cardinal_desde_grados(rumbo_avance)
                 return (
                     f"Indicaciones: vas hacia el {rumbo_real}; corregí hacia el {rumbo} "
-                    f"por {distancia:.0f} m."
+                    f"por {distancia:.0f} m{calle_str}."
                 )
         giro = f" Luego girá hacia el {rumbo_despues}." if rumbo_despues else ""
         return (
-            f"Indicaciones: avanzá {distancia:.0f} m hacia el {rumbo}.{giro}"
+            f"Indicaciones: avanzá {distancia:.0f} m{calle_str} hacia el {rumbo}.{giro}"
         )
 
     @classmethod

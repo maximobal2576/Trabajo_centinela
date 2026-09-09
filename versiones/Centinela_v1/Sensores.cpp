@@ -58,50 +58,24 @@ void Sensores::actualizar()
 
 int Sensores::leerDistancia(int trig, int echo)
 {
-
-
     digitalWrite(trig, LOW);
-
     delayMicroseconds(2);
-
-
     digitalWrite(trig, HIGH);
-
     delayMicroseconds(10);
-
-
     digitalWrite(trig, LOW);
 
-
-
-    unsigned long duracion =
-        pulseIn(echo, HIGH, 30000);
-
-
-
+    // Timeout de 15ms (~2.5m)
+    unsigned long duracion = pulseIn(echo, HIGH, 15000);
     if (duracion == 0)
     {
-
         return 400;
-
     }
 
-
-
-    int distancia =
-        duracion * 0.034 / 2;
-
-
-
-    if (distancia > 400)
+    int distancia = (int)(duracion * 0.034 / 2);
+    if (distancia < 2 || distancia > 400)
     {
-
         distancia = 400;
-
     }
-
-
 
     return distancia;
-
 }
