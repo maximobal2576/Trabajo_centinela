@@ -71,3 +71,97 @@ class VozService:
             from kivy.clock import Clock
             cb = callback
             Clock.schedule_once(lambda dt: cb(texto, error), 0)
+
+    # =========================================================================
+    # RECONOCIMIENTO DE AUDIO REMOTO (ENVIADO DESDE EL MICROFONO DEL BASTON)
+    # =========================================================================
+
+    def procesar_audio_pcm(self, pcm_data: bytes, callback):
+        """
+        Recibe audio PCM 16-bit 16kHz mono grabado por el micrófono del bastón (ESP32),
+        lo convierte a formato WAV y realiza el Speech-To-Text en un hilo en background.
+        Al finalizar, invoca el callback(texto, error) en el hilo principal de la UI.
+        """
+        if not pcm_data:
+            if callback:
+                from kivy.clock import Clock
+                Clock.schedule_once(lambda dt: callback(None, "Audio vacío"), 0)
+            return
+
+        import threading
+        hilo = threading.Thread(
+            target=self._transcribir_audio_remoto,
+            args=(pcm_data, callback),
+            daemon=True,
+        )
+        hilo.start()
+
+    def _transcribir_audio_remoto(self, pcm_data: bytes, callback):
+        import struct
+        import json
+        import urllib.request
+        from kivy.clock import Clock
+
+        # 1. Empaquetar PCM a contenedor WAV estándar (16kHz, 16-bit mono)
+        sample_rate = 16000
+        channels = 1
+        bits_per_sample = 16
+        byte_rate = sample_rate * channels * (bits_per_sample // 8)
+        block_align = channels * (bits_per_sample // 8)
+        data_size = len(pcm_data)
+        chunk_size = 36 + data_size
+
+        wav_header = struct.pack(
+            "<4sI4s4sIHHIIHH4sI",
+            b"RIFF",
+            chunk_size,
+            b"WAVE",
+            b"fmt ",
+            16,
+            1,  # Formato PCM
+            channels,
+            sample_rate,
+            byte_rate,
+            block_align,
+            bits_per_sample,
+            b"data",
+            data_size,
+        )
+        wav_bytes = wav_header + pcm_data
+
+        texto_reconocido = None
+        error_msg = None
+
+        # 2. Consultar servicio STT de Google (español latinoamericano)
+        try:
+            url = "https://www.google.com/speech-api/v2/recognize?client=chromium&lang=es-419"
+            req = urllib.request.Request(
+                url,
+                data=wav_bytes,
+                headers={"Content-Type": "audio/x-wav; rate=16000"},
+            )
+            with urllib.request.urlopen(req, timeout=7) as respuesta:
+                cuerpo = respuesta.read().decode("utf-8", errors="ignore")
+                for linea in cuerpo.splitlines():
+                    linea = linea.strip()
+                    if not linea:
+                        continue
+                    try:
+                        data = json.loads(linea)
+                        resultados = data.get("result", [])
+                        if resultados and "alternative" in resultados[0]:
+                            alternativas = resultados[0]["alternative"]
+                            if alternativas and "transcript" in alternativas[0]:
+                                texto_reconocido = alternativas[0]["transcript"].strip()
+                                break
+                    except Exception:
+                        pass
+        except Exception as e:
+            error_msg = f"Error al procesar voz remota: {e}"
+
+        if not texto_reconocido and not error_msg:
+            error_msg = "No se reconoció ninguna orden de voz."
+
+        # 3. Notificar resultado al callback en el hilo principal
+        if callback:
+            Clock.schedule_once(lambda dt: callback(texto_reconocido, error_msg), 0)

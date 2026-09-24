@@ -1,0 +1,15 @@
+# Entornos y compilación
+.venv/
+venv/
+bin/*.apk
+.buildozer/
+__pycache__/
+*.pyc
+
+# IDEs
+.vscode/
+.idea/
+
+# Sistema
+Thumbs.db
+Desktop.ini

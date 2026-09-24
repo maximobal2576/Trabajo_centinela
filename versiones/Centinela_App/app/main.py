@@ -12,8 +12,11 @@ from screens.configuracion import ConfiguracionScreen
 from screens.rutas import RutasScreen
 
 from widgets.menu_lateral import MenuLateral
+from widgets.top_bar import TopBar
 from components.fondo_centinela import FondoCentinela
 from components.estilos_centinela import BORDO
+from services.bluetooth import get_bluetooth_service
+from kivy.clock import Clock
 
 
 class CentinelaApp(MDApp):
@@ -64,70 +67,10 @@ class CentinelaApp(MDApp):
         root.add_widget(self.sm)
 
         # ============================================================
-        # BOTÓN DE MICRÓFONO GLOBAL (Esquina superior derecha)
-        # Permite navegar entre pantallas y ejecutar acciones por voz.
+        # BARRA SUPERIOR GLOBAL (Micrófono y Badge de Batería)
         # ============================================================
-        from kivymd.uix.button import MDIconButton
-        from kivymd.uix.boxlayout import MDBoxLayout
-        from kivymd.uix.label import MDLabel
-        from kivymd.uix.card import MDCard
-        from components.estilos_centinela import CREMA_CLARO, DORADO_APAGADO, VERDE_ESTADO, ROJO_EMERGENCIA, OSCURO
-        from kivy.metrics import sp
-        from kivy.clock import Clock
-        from services.bluetooth import get_bluetooth_service
-
-        self.btn_mic_global = MDIconButton(
-            icon="microphone",
-            md_bg_color=BORDO,
-            theme_icon_color="Custom",
-            icon_color=CREMA_CLARO,
-            pos_hint={"right": 0.97, "top": 0.98},
-            size_hint=(None, None),
-            size=(dp(48), dp(48)),
-            icon_size=sp(26),
-            on_release=self._escuchar_comando_global,
-        )
-        root.add_widget(self.btn_mic_global)
-
-        # ============================================================
-        # INDICADOR DE BATERÍA GLOBAL (Centro superior, entre menú y micrófono)
-        # Muestra el ícono dinámico y porcentaje del bastón en todas las pantallas.
-        # ============================================================
-        self.badge_bateria = MDCard(
-            orientation="horizontal",
-            size_hint=(None, None),
-            size=(dp(84), dp(34)),
-            pos_hint={"center_x": 0.5, "top": 0.975},
-            padding=[dp(6), dp(2), dp(8), dp(2)],
-            spacing=dp(4),
-            md_bg_color=(*OSCURO[:3], 0.88),
-            line_color=DORADO_APAGADO,
-            line_width=dp(1.2),
-            radius=[dp(17)],
-            elevation=3,
-        )
-        self.icono_bateria_global = MDIconButton(
-            icon="battery-bluetooth",
-            theme_icon_color="Custom",
-            icon_color=VERDE_ESTADO,
-            icon_size=sp(16),
-            size_hint=(None, 1),
-            width=dp(22),
-            ripple_scale=0,
-        )
-        self.lbl_bateria_global = MDLabel(
-            text="--%",
-            halign="center",
-            font_style="Caption",
-            bold=True,
-            theme_text_color="Custom",
-            text_color=CREMA_CLARO,
-            size_hint=(1, 1),
-            font_size=sp(11),
-        )
-        self.badge_bateria.add_widget(self.icono_bateria_global)
-        self.badge_bateria.add_widget(self.lbl_bateria_global)
-        root.add_widget(self.badge_bateria)
+        self.top_bar = TopBar(on_mic_press=self._escuchar_comando_global)
+        root.add_widget(self.top_bar)
 
         self.bluetooth_service = get_bluetooth_service()
         Clock.schedule_interval(self._actualizar_bateria_global, 1.0)
@@ -146,34 +89,14 @@ class CentinelaApp(MDApp):
     def _actualizar_bateria_global(self, dt):
         """Actualiza el icono y porcentaje de la batería del bastón en todas las pantallas."""
         try:
-            if not self.bluetooth_service.connected:
-                self.lbl_bateria_global.text = "OFF"
-                self.lbl_bateria_global.text_color = ROJO_EMERGENCIA
-                self.icono_bateria_global.icon = "bluetooth-off"
-                self.icono_bateria_global.icon_color = ROJO_EMERGENCIA
-                return
+            conectado = self.bluetooth_service.connected
+            bateria_valor = self.bluetooth_service.state.get("BATERIA", "--")
+            self.top_bar.actualizar_bateria(conectado, bateria_valor)
 
-            bateria_str = str(self.bluetooth_service.state.get("BATERIA", "--")).strip()
-            if bateria_str.isdigit():
-                nivel = int(bateria_str)
-                self.lbl_bateria_global.text = f"{nivel}%"
-                if nivel > 60:
-                    self.icono_bateria_global.icon = "battery-high"
-                    self.icono_bateria_global.icon_color = VERDE_ESTADO
-                    self.lbl_bateria_global.text_color = CREMA_CLARO
-                elif nivel > 20:
-                    self.icono_bateria_global.icon = "battery-medium"
-                    self.icono_bateria_global.icon_color = DORADO_APAGADO
-                    self.lbl_bateria_global.text_color = CREMA_CLARO
-                else:
-                    self.icono_bateria_global.icon = "battery-alert"
-                    self.icono_bateria_global.icon_color = ROJO_EMERGENCIA
-                    self.lbl_bateria_global.text_color = ROJO_EMERGENCIA
-            else:
-                self.lbl_bateria_global.text = "--%"
-                self.icono_bateria_global.icon = "battery-bluetooth"
-                self.icono_bateria_global.icon_color = DORADO_APAGADO
-                self.lbl_bateria_global.text_color = CREMA_CLARO
+            # Monitoreo de eventos críticos del bastón (Caída o Pulsador SOS)
+            evento = str(self.bluetooth_service.state.get("EVENTO", "")).strip().upper()
+            if evento in ("CAIDA", "EMERGENCIA", "SOS") and self.sm.current != "emergencia":
+                self.switch_screen("emergencia")
         except Exception:
             pass
 
@@ -307,6 +230,16 @@ class CentinelaApp(MDApp):
     def on_start(self):
         """El botón Atrás cierra el menú si está abierto, o vuelve al inicio."""
         Window.bind(on_keyboard=self._on_keyboard)
+        # Iniciar auto-conexión Bluetooth con el bastón Centinela v2 en background
+        Clock.schedule_once(self._iniciar_auto_conexion_bt, 0.6)
+
+    def _iniciar_auto_conexion_bt(self, _dt=None):
+        """Lanza el hilo de auto-conexión SPP con el ESP32."""
+        try:
+            if hasattr(self, "bluetooth_service") and self.bluetooth_service:
+                self.bluetooth_service.conectar_automaticamente()
+        except Exception as e:
+            print(f"[CentinelaApp] Error en auto-conexión BT: {e}")
 
     def on_pause(self):
         """Mantiene los servicios de GPS, Bluetooth y notificaciones activos al suspender la pantalla."""
