@@ -25,6 +25,7 @@ from services.gps import get_ubicacion_service
 from services.notificaciones import NotificacionService
 from services.rutas import RutasService
 from services.voz import VozService
+from widgets.dialogo_ruta import DialogoGuardarRuta
 
 
 class NavegacionScreen(MDBoxLayout):
@@ -166,81 +167,13 @@ class NavegacionScreen(MDBoxLayout):
         self.add_widget(self.boton_detener)
 
         # =========================
-        # PANEL DIÁLOGO / PREGUNTA GUARDAR RUTA
         # =========================
-        self.tarjeta_dialogo = MDCard(
-            orientation="vertical",
-            padding=dp(14),
-            spacing=dp(10),
-            size_hint=(1, None),
-            height=dp(200),
-            md_bg_color=OSCURO,
-            line_color=DORADO_APAGADO,
-            line_width=dp(1.2),
-            elevation=4,
+        # PANEL DIÁLOGO ACCESIBLE (Guardar Ruta)
+        # =========================
+        self.tarjeta_dialogo = DialogoGuardarRuta(
+            al_confirmar_guardar=self._on_confirmar_guardar_dialogo,
+            al_confirmar_solo_navegar=self._on_confirmar_solo_navegar_dialogo,
         )
-        self.lbl_dialogo_titulo = MDLabel(
-            text="¿Desea guardar esta ruta?",
-            halign="center",
-            bold=True,
-            font_style="Subtitle1",
-            theme_text_color="Custom",
-            text_color=DORADO_APAGADO,
-            size_hint_y=None,
-            height=dp(28),
-        )
-        self.lbl_dialogo_desc = MDLabel(
-            text="Destino: --",
-            halign="center",
-            font_style="Caption",
-            theme_text_color="Custom",
-            text_color=CREMA_CLARO,
-            size_hint_y=None,
-            height=dp(24),
-        )
-        self.input_nombre_ruta = MDTextField(
-            hint_text="Nombre de la ruta",
-            mode="rectangle",
-            size_hint_y=None,
-            height=dp(44),
-        )
-        self.fila_dialogo_botones = MDBoxLayout(
-            orientation="horizontal",
-            size_hint_y=None,
-            height=dp(42),
-            spacing=dp(8),
-        )
-        self.btn_dialogo_si = MDRaisedButton(
-            text="SÍ (GUARDAR)",
-            size_hint=(0.5, 1),
-            font_size=sp(12),
-            md_bg_color=BORDO,
-            theme_text_color="Custom",
-            text_color=CREMA_CLARO,
-            on_release=self._confirmar_guardar_ruta,
-        )
-        self.btn_dialogo_no = MDRaisedButton(
-            text="NO (SOLO NAVEGAR)",
-            size_hint=(0.5, 1),
-            font_size=sp(12),
-            md_bg_color=BORDO_OSCURO,
-            theme_text_color="Custom",
-            text_color=CREMA_CLARO,
-            on_release=self._confirmar_solo_navegar,
-        )
-        self.fila_dialogo_botones.add_widget(self.btn_dialogo_si)
-        self.fila_dialogo_botones.add_widget(self.btn_dialogo_no)
-
-        self.tarjeta_dialogo.add_widget(self.lbl_dialogo_titulo)
-        self.tarjeta_dialogo.add_widget(self.lbl_dialogo_desc)
-        self.tarjeta_dialogo.add_widget(self.input_nombre_ruta)
-        self.tarjeta_dialogo.add_widget(self.fila_dialogo_botones)
-
-        # Oculto por defecto
-        self.tarjeta_dialogo.opacity = 0
-        self.tarjeta_dialogo.disabled = True
-        self.tarjeta_dialogo.size_hint_y = None
-        self.tarjeta_dialogo.height = 0
         self.add_widget(self.tarjeta_dialogo)
 
         # Clock de respaldo: refresca la UI si el callback no llegó aún
@@ -386,13 +319,7 @@ class NavegacionScreen(MDBoxLayout):
             return
 
         self.destino_pendiente = destino
-        self.lbl_dialogo_desc.text = f"Destino: «{destino}»"
-        self.input_nombre_ruta.text = f"Ruta a {destino}"
-
-        # Mostrar panel de diálogo
-        self.tarjeta_dialogo.opacity = 1
-        self.tarjeta_dialogo.disabled = False
-        self.tarjeta_dialogo.height = dp(200)
+        self.tarjeta_dialogo.mostrar(destino, nombre_sugerido=f"Ruta a {destino}")
         self.estado_gps.text = f"¿Desea guardar la ruta a «{destino}»? Decí Sí o No."
 
     def _escuchar_respuesta_dialogo(self, _instance=None):
@@ -411,19 +338,24 @@ class NavegacionScreen(MDBoxLayout):
         else:
             self.estado_gps.text = f"Entendí «{texto}». Decí «Sí» para guardar o «No» para solo navegar."
 
+    def _on_confirmar_guardar_dialogo(self, nombre):
+        nombre_final = nombre or f"Ruta a {self.destino_pendiente}"
+        self._iniciar_recorrido_interno(self.destino_pendiente, guardar_nombre=nombre_final)
+
+    def _on_confirmar_solo_navegar_dialogo(self):
+        self._iniciar_recorrido_interno(self.destino_pendiente, guardar_nombre=None)
+
     def _confirmar_guardar_ruta(self, _instance=None):
-        nombre = self.input_nombre_ruta.text.strip() or f"Ruta a {self.destino_pendiente}"
-        self._ocultar_dialogo()
+        nombre = self.tarjeta_dialogo.input_nombre.text.strip() or f"Ruta a {self.destino_pendiente}"
+        self.tarjeta_dialogo.ocultar()
         self._iniciar_recorrido_interno(self.destino_pendiente, guardar_nombre=nombre)
 
     def _confirmar_solo_navegar(self, _instance=None):
-        self._ocultar_dialogo()
+        self.tarjeta_dialogo.ocultar()
         self._iniciar_recorrido_interno(self.destino_pendiente, guardar_nombre=None)
 
     def _ocultar_dialogo(self):
-        self.tarjeta_dialogo.opacity = 0
-        self.tarjeta_dialogo.disabled = True
-        self.tarjeta_dialogo.height = 0
+        self.tarjeta_dialogo.ocultar()
 
     def _iniciar_recorrido_interno(self, destino, guardar_nombre=None):
         """Calcula el recorrido en segundo plano y muestra indicaciones dentro de la app."""

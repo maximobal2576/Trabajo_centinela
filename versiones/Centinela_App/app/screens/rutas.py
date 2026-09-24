@@ -19,6 +19,7 @@ from components.estilos_centinela import (
 from services.gps import get_ubicacion_service
 from services.rutas import RutasService
 from services.voz import VozService
+from widgets.tarjeta_ruta import TarjetaRutaItem
 
 
 class RutasScreen(MDBoxLayout):
@@ -308,39 +309,12 @@ class RutasScreen(MDBoxLayout):
             if creada:
                 detalle += f" • {creada[:16]}"
 
-            tarjeta = MDCard(
-                orientation="vertical",
-                size_hint=(1, None),
-                height=dp(64),
-                padding=[dp(12), dp(8), dp(12), dp(8)],
-                spacing=dp(2),
-                md_bg_color=OSCURO,
-                line_color=BORDO_OSCURO,
-                line_width=dp(1),
-                elevation=2,
-                ripple_behavior=True,
+            tarjeta = TarjetaRutaItem(
+                nombre=nombre,
+                detalle=detalle,
+                indice=i,
+                on_select_cb=self._seleccionar_ruta,
             )
-            lbl_nombre = MDLabel(
-                text=nombre,
-                bold=True,
-                font_style="Subtitle1",
-                theme_text_color="Custom",
-                text_color=CREMA_CLARO,
-                size_hint_y=None,
-                height=dp(26),
-            )
-            lbl_detalle = MDLabel(
-                text=detalle,
-                font_style="Caption",
-                theme_text_color="Custom",
-                text_color=DORADO_APAGADO,
-                size_hint_y=None,
-                height=dp(20),
-            )
-            tarjeta.add_widget(lbl_nombre)
-            tarjeta.add_widget(lbl_detalle)
-
-            tarjeta.bind(on_release=lambda _card, idx=i: self._seleccionar_ruta(idx))
             self.botones_rutas.append(tarjeta)
             self.contenedor_lista.add_widget(tarjeta)
 
@@ -354,14 +328,9 @@ class RutasScreen(MDBoxLayout):
         self.estado.text = f"Seleccionada: «{ruta.get('nombre')}»"
         self.estado.text_color = VERDE_ESTADO
 
-        # Resaltar la tarjeta seleccionada
+        # Resaltar la tarjeta seleccionada usando el método del widget
         for i, card in enumerate(self.botones_rutas):
-            if i == idx:
-                card.md_bg_color = BORDO
-                card.line_color = DORADO_APAGADO
-            else:
-                card.md_bg_color = OSCURO
-                card.line_color = BORDO_OSCURO
+            card.set_seleccionada(i == idx)
 
         # Habilitar botones de acción
         self.btn_reanudar.disabled = False

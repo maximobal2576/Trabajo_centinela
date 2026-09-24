@@ -1,40 +1,43 @@
-# Arquitectura y DiseÒo - Centinela App
+Ôªø# Arquitectura y Dise√±o - Centinela App
 
-App accesible de asistencia para personas ciegas o con baja visiÛn, vinculada a bastÛn inteligente ESP32 por Bluetooth SPP.
+App accesible de asistencia para personas ciegas o con baja visi√≥n, vinculada a bast√≥n inteligente ESP32 por Bluetooth SPP.
 
 ## 1. Estructura de Directorios
 
-- **main.py**: Punto de entrada del ciclo de vida KivyMD (gestor de pantallas ScreenManager, eventos globales del sistema y ciclo de vida de Android).
-- **widgets/**:
-  - menu_lateral.py: NavegaciÛn accesible tipo cajÛn lateral con soporte TalkBack.
-  - 	op_bar.py: Barra superior flotante unificada (botÛn de comando de voz y badge de estado de baterÌa del bastÛn).
-- **components/**:
-  - estilos_centinela.py: Tokens de diseÒo, colorimetrÌa WCAG AAA (alto contraste) y tipografÌa.
-  - ondo_centinela.py: Fondo din·mico uniforme para todas las pantallas.
-- **screens/**:
-  - inicio.py: Estado general de conexiÛn Bluetooth con el bastÛn y accesos r·pidos.
-  - estado.py: TelemetrÌa en tiempo real del bastÛn (baterÌa, inclinaciÛn, vibraciÛn, estado de sensores).
-  - 
-avegacion.py: Asistencia de navegaciÛn GPS, c·lculo de rutas e indicaciones paso a paso.
-  - emergencia.py: MarcaciÛn r·pida (911, contactos) y envÌo de coordenadas por SMS/alerta.
-  - utas.py: GrabaciÛn, persistencia y reproducciÛn de rutas habituales.
-  - configuracion.py: Ajustes de sensibilidad, voz TTS, volumen y contactos de emergencia.
-- **services/**:
-  - luetooth.py: Singleton de conexiÛn y lectura/escritura serial Bluetooth SPP con el bastÛn.
-  - oz.py: SÌntesis de voz (TTS) y reconocimiento de voz (STT).
-  - gps.py: AdquisiciÛn de geolocalizaciÛn Android/Desktop y br˙jula.
-  - 
-otificaciones.py: Notificaciones en primer plano y alertas del sistema.
-  - utas.py: C·lculo y parsing de caminos OSM/GraphHopper.
-  - lmacenamiento.py: Persistencia local SQLite/JSON de preferencias y rutas.
+- **`main.py`**: Punto de entrada del ciclo de vida KivyMD (gestor de pantallas `ScreenManager`, eventos globales del sistema y ciclo de vida de Android).
+- **`widgets/`**:
+  - `menu_lateral.py`: Navegaci√≥n accesible tipo caj√≥n lateral con soporte TalkBack.
+  - `top_bar.py`: Barra superior flotante unificada (bot√≥n de comando de voz y badge de bater√≠a en tiempo real).
+  - `dialogo_ruta.py`: Tarjeta flotante interactiva para confirmaci√≥n de guardado de rutas.
+  - `tarjeta_ruta.py`: Elemento visual accesible individual del historial de rutas guardadas.
+- **`components/`**:
+  - `estilos_centinela.py`: Tokens de dise√±o, colorimetr√≠a WCAG AAA (alto contraste) y tipograf√≠a.
+  - `fondo_centinela.py`: Fondo din√°mico uniforme para todas las pantallas.
+- **`screens/`**:
+  - `inicio.py`: Estado general de conexi√≥n Bluetooth con el bast√≥n y accesos r√°pidos.
+  - `estado.py`: Telemetr√≠a en tiempo real del bast√≥n (bater√≠a, inclinaci√≥n, vibraci√≥n, estado de sensores).
+  - `navegacion.py`: Asistencia de navegaci√≥n GPS, c√°lculo de rutas peatonales e indicaciones paso a paso.
+  - `emergencia.py`: Marcaci√≥n r√°pida (911, contactos) y env√≠o de coordenadas por SMS/alerta.
+  - `rutas.py`: Grabaci√≥n, persistencia y reproducci√≥n de rutas habituales (con inversi√≥n autom√°tica de ida/vuelta).
+  - `configuracion.py`: Ajustes de sensibilidad, voz TTS, volumen y contactos de emergencia.
+- **`services/`**:
+  - `bluetooth.py`: Singleton y ciclo de vida de sockets Bluetooth SPP y reconexi√≥n autom√°tica.
+  - `protocolo_baston.py`: Formato binario I2S PCM y parser de telemetr√≠a ASCII (`EVENTO:CAIDA`, `EVENTO:SOS`, etc.).
+  - `calculos_geo.py`: Distancias geod√©sicas (Haversine), interpolaci√≥n de puntos a 8 m y rumbos cardinales.
+  - `geocodificador.py`: Consulta de mapa OSM / Nominatim, b√∫squeda difusa de lugares y reverse geocoding.
+  - `rutas.py`: Orquestador de ruteo peatonal online OSRM, persistencia JSON y seguimiento en tiempo real.
+  - `voz.py`: S√≠ntesis de voz (TTS) y reconocimiento de voz (STT).
+  - `gps.py`: Adquisici√≥n de geolocalizaci√≥n Android/Desktop y br√∫jula.
+  - `notificaciones.py`: Notificaciones en primer plano y alertas del sistema.
+  - `almacenamiento.py`: Persistencia local SQLite/JSON de preferencias.
 
-## 2. Paleta de ColorimetrÌa (Accesibilidad y Contraste)
+## 2. Paleta de Colorimetr√≠a (Accesibilidad y Contraste WCAG AAA)
 
-- **CREMA (#D8C5A5)**: Base visual c·lida para superficies secundarias.
-- **CREMA_CLARO (#F2E6CC)**: Texto principal sobre fondos oscuros (cumple ratio WCAG AAA).
-- **BORDO (#6E1F2B)**: Color de identidad institucional y botones primarios.
-- **BORDO_OSCURO (#45121B)**: Sombra y superficies activas.
-- **OSCURO (#211A16)**: Fondo principal de alto contraste y legibilidad.
-- **DORADO_APAGADO (#B59A6A)**: Bordes, divisores y elementos de acento tenue.
-- **VERDE_ESTADO (#4DBF73)**: Estado de baterÌa Ûptimo y conexiÛn activa.
-- **ROJO_EMERGENCIA (#A6292E)**: Estados crÌticos, baterÌa baja y alerta SOS.
+- **CREMA (`#D8C5A5`)**: Base visual c√°lida para superficies secundarias.
+- **CREMA_CLARO (`#F2E6CC`)**: Texto principal sobre fondos oscuros (cumple ratio WCAG AAA).
+- **BORDO (`#6E1F2B`)**: Color de identidad institucional y botones primarios.
+- **BORDO_OSCURO (`#45121B`)**: Sombra y superficies activas.
+- **OSCURO (`#211A16`)**: Fondo principal de alto contraste y legibilidad.
+- **DORADO_APAGADO (`#B59A6A`)**: Bordes, divisores y elementos de acento tenue.
+- **VERDE_ESTADO (`#4DBF73`)**: Estado de bater√≠a √≥ptimo y conexi√≥n activa.
+- **ROJO_EMERGENCIA (`#A6292E`)**: Estados cr√≠ticos, bater√≠a baja y alerta SOS.
