@@ -10,6 +10,7 @@ App accesible de asistencia para personas ciegas o con baja visión, vinculada a
   - `top_bar.py`: Barra superior flotante unificada (botón de comando de voz y badge de batería en tiempo real).
   - `dialogo_ruta.py`: Tarjeta flotante interactiva para confirmación de guardado de rutas.
   - `tarjeta_ruta.py`: Elemento visual accesible individual del historial de rutas guardadas.
+  - `panel_sos.py`: Botones accesibles de emergencia (911, contacto, SMS GPS) y cuenta regresiva de seguridad.
 - **`components/`**:
   - `estilos_centinela.py`: Tokens de diseño, colorimetría WCAG AAA (alto contraste) y tipografía.
   - `fondo_centinela.py`: Fondo dinámico uniforme para todas las pantallas.
@@ -17,7 +18,7 @@ App accesible de asistencia para personas ciegas o con baja visión, vinculada a
   - `inicio.py`: Estado general de conexión Bluetooth con el bastón y accesos rápidos.
   - `estado.py`: Telemetría en tiempo real del bastón (batería, inclinación, vibración, estado de sensores).
   - `navegacion.py`: Asistencia de navegación GPS, cálculo de rutas peatonales e indicaciones paso a paso.
-  - `emergencia.py`: Marcación rápida (911, contactos) y envío de coordenadas por SMS/alerta.
+  - `emergencia.py`: Marcación rápida con cuenta regresiva cancelable y envío de alertas GPS por SMS.
   - `rutas.py`: Grabación, persistencia y reproducción de rutas habituales (con inversión automática de ida/vuelta).
   - `configuracion.py`: Ajustes de sensibilidad, voz TTS, volumen y contactos de emergencia.
 - **`services/`**:

@@ -8,6 +8,7 @@ from kivymd.uix.label import MDLabel
 
 from services.almacenamiento import AlmacenamientoService
 from services.gps import UbicacionService
+from widgets.panel_sos import PanelBotonesSOS
 
 from components.estilos_centinela import (
     CREMA_CLARO,
@@ -73,69 +74,21 @@ class EmergenciaScreen(MDBoxLayout):
         self.add_widget(self.estado_llamada)
 
         # ==========================================
-        # BOTÓN 911
+        # PANEL DE BOTONES SOS (MODULAR)
         # ==========================================
-
-        self.boton_911 = MDRaisedButton(
-            text="LLAMAR 911",
-            md_bg_color=ROJO_EMERGENCIA,
-            pos_hint={"center_x": 0.5},
-            size_hint=(0.85, None),
-            height=dp(52),
-            on_release=lambda instance: self.iniciar_llamada(
-                "911",
-                "911"
-            ),
+        self.panel_sos = PanelBotonesSOS(
+            on_call_911=lambda instance: self.iniciar_llamada("911", "911"),
+            on_call_contacto=self.llamar_contacto,
+            on_send_gps=self.enviar_ubicacion,
+            on_cancelar=self.cancelar_llamada,
         )
+        self.add_widget(self.panel_sos)
 
-        self.add_widget(self.boton_911)
-
-        # ==========================================
-        # BOTÓN CONTACTO
-        # ==========================================
-
-        self.boton_contacto = MDRaisedButton(
-            text="LLAMAR CONTACTO DE EMERGENCIA",
-            md_bg_color=BORDO,
-            pos_hint={"center_x": 0.5},
-            size_hint=(0.85, None),
-            height=dp(52),
-            on_release=self.llamar_contacto,
-        )
-
-        self.add_widget(self.boton_contacto)
-
-        # ==========================================
-        # BOTÓN UBICACIÓN
-        # ==========================================
-
-        self.boton_ubicacion = MDRaisedButton(
-            text="ENVIAR UBICACIÓN AL CONTACTO",
-            md_bg_color=BORDO_OSCURO,
-            pos_hint={"center_x": 0.5},
-            size_hint=(0.85, None),
-            height=dp(52),
-            on_release=self.enviar_ubicacion,
-        )
-
-        self.add_widget(self.boton_ubicacion)
-
-        # ==========================================
-        # BOTÓN CANCELAR
-        # ==========================================
-
-        self.boton_cancelar = MDRaisedButton(
-            text="CANCELAR",
-            md_bg_color=OSCURO,
-            pos_hint={"center_x": 0.5},
-            size_hint=(0.70, None),
-            height=dp(52),
-            disabled=True,
-            opacity=0,
-            on_release=self.cancelar_llamada,
-        )
-
-        self.add_widget(self.boton_cancelar)
+        # Referencias de compatibilidad retrocompatible directa
+        self.boton_911 = self.panel_sos.btn_911
+        self.boton_contacto = self.panel_sos.btn_contacto
+        self.boton_ubicacion = self.panel_sos.btn_ubicacion
+        self.boton_cancelar = self.panel_sos.btn_cancelar
 
     # ==================================================
     # LLAMAR CONTACTO
@@ -180,14 +133,7 @@ class EmergenciaScreen(MDBoxLayout):
         )
 
         self._solicitar_permiso_llamada()
-
-        self.boton_cancelar.disabled = False
-        self.boton_cancelar.opacity = 1
-
-        self.boton_911.disabled = True
-        self.boton_contacto.disabled = True
-        self.boton_ubicacion.disabled = True
-
+        self.panel_sos.activar_modo_cuenta_regresiva()
         self._mostrar_cuenta_regresiva()
 
         self.evento_cuenta_regresiva = (
@@ -474,14 +420,7 @@ class EmergenciaScreen(MDBoxLayout):
     # ==================================================
 
     def _restablecer_controles(self):
-
         self.numero_pendiente = ""
         self.destino_pendiente = ""
         self.segundos_restantes = 0
-
-        self.boton_cancelar.disabled = True
-        self.boton_cancelar.opacity = 0
-
-        self.boton_911.disabled = False
-        self.boton_contacto.disabled = False
-        self.boton_ubicacion.disabled = False
+        self.panel_sos.restablecer_botones()
