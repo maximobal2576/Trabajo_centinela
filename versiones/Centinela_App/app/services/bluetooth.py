@@ -34,8 +34,11 @@ else:
         list_ports = None
 
 
-# Magic header para paquetes de audio PCM (debe coincidir con Bluetooth.h)
-_AUDIO_MAGIC = bytes([0xA5, 0x5A])
+from services.protocolo_baston import (
+    empaquetar_audio_pcm,
+    interpretar_linea_telemetria,
+    CABECERA_AUDIO_MAGIC,
+)
 
 # Intervalo de reintento de conexion automatica (segundos)
 _RECONECT_INTERVAL = 5.0
@@ -386,13 +389,8 @@ class BluetoothService:
         if not datos_pcm:
             return True
 
-        # Empaquetar con header
-        longitud = len(datos_pcm)
-        paquete = (
-            _AUDIO_MAGIC
-            + bytes([longitud & 0xFF, (longitud >> 8) & 0xFF])
-            + datos_pcm
-        )
+        # Empaquetar con header I2S utilizando el módulo de protocolo
+        paquete = empaquetar_audio_pcm(datos_pcm)
 
         try:
             if platform == "android":
@@ -448,38 +446,13 @@ class BluetoothService:
 
     def _parse_line(self, line):
         """Extrae pares clave:valor o eventos de micrófono enviados por el ESP32."""
-        line = line.strip()
-        if not line:
-            return
-
-        # Control del micrófono remoto del bastón
-        if line == "MIC_START":
-            self._audio_mic_buffer = bytearray()
+        evento, datos = interpretar_linea_telemetria(line, self.state, self._audio_mic_buffer)
+        if evento == "MIC_START":
             self._mic_grabando = True
-            return
-
-        if line == "MIC_STOP":
+        elif evento == "MIC_STOP":
             self._mic_grabando = False
-            if self._audio_mic_buffer:
-                datos = bytes(self._audio_mic_buffer)
-                self._audio_mic_buffer = bytearray()
+            if datos:
                 self._procesar_audio_mic_remoto(datos)
-            return
-
-        if line.startswith("MIC_CHUNK:"):
-            import base64
-            chunk_b64 = line[len("MIC_CHUNK:"):].strip()
-            try:
-                chunk = base64.b64decode(chunk_b64)
-                self._audio_mic_buffer.extend(chunk)
-            except Exception:
-                pass
-            return
-
-        if ":" not in line:
-            return
-        key, value = line.split(":", 1)
-        self.state[key.strip()] = value.strip()
 
     def _procesar_audio_mic_remoto(self, pcm_data: bytes):
         """Envía el stream de audio capturado por el bastón al motor de voz para ejecutar la orden."""
