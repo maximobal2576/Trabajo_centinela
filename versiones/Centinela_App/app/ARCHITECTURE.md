@@ -10,6 +10,7 @@ App accesible de asistencia para personas ciegas o con baja visión, vinculada a
   - `top_bar.py`: Barra superior flotante unificada (botón de comando de voz y badge de batería en tiempo real).
   - `dialogo_ruta.py`: Tarjeta flotante interactiva para confirmación de guardado de rutas.
   - `tarjeta_ruta.py`: Elemento visual accesible individual del historial de rutas guardadas.
+  - `tarjeta_metrica.py`: Tarjeta horizontal de visualización de telemetría y diagnósticos.
   - `panel_sos.py`: Botones accesibles de emergencia (911, contacto, SMS GPS) y cuenta regresiva de seguridad.
 - **`components/`**:
   - `estilos_centinela.py`: Tokens de diseño, colorimetría WCAG AAA (alto contraste) y tipografía.
