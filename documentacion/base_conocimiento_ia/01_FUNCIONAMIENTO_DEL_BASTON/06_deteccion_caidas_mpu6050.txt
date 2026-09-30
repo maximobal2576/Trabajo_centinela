@@ -1,0 +1,35 @@
+===============================================================================
+DETECCIÓN DE CAÍDAS Y GOLPES CON EL MPU-6050
+===============================================================================
+1. PROPÓSITO:
+   Identificar automáticamente si el usuario o el bastón han sufrido una caída
+   accidental, desmayo o impacto severo para activar los protocolos de auxilio.
+
+2. PINES Y PROTOCOLO:
+   - SDA: GPIO 21 (Línea de datos I2C).
+   - SCL: GPIO 22 (Línea de reloj I2C).
+   - Frecuencia I2C: 400 kHz (Fast Mode).
+   - Librería: MPU6050_light (con auto-calibración de offsets en el arranque).
+
+3. ALGORITMO VECTORIAL DE ANÁLISIS:
+   - Se leen las aceleraciones en los 3 ejes normalizadas en gravedad terrestre (G):
+     AccX, AccY, AccZ.
+   - Se calcula el módulo o magnitud Euclídea del vector aceleración:
+     modulo = sqrt( AccX*AccX + AccY*AccY + AccZ*AccZ );
+
+4. UMBRALES DE DISPARO:
+   - Filtro de ruido: Si modulo < 0.15G, se ignora (falla de comunicación).
+   - CAÍDA LIBRE (MPU_UMBRAL_CAIDA_LIBRE = 0.45G):
+     Cuando el bastón cae, la aceleración aparente cae bruscamente hacia 0G.
+     Si modulo < 0.45G -> caidaDetectada = true.
+   - GOLPE / IMPACTO (MPU_UMBRAL_GOLPE = 1.75G):
+     Al chocar contra el piso o una superficie tras la caída libre, la desaceleración
+     supera 1.75G.
+     Si modulo > 1.75G -> caidaDetectada = true.
+
+5. RESPUESTA:
+   - Estado: SISTEMA_CAIDA.
+   - Prioridad: PRIORIDAD_CRITICA (3).
+   - Vibración: Todos los motores al 100% (PWM 255).
+   - Bluetooth: Notifica EVENTO:CAIDA a la aplicación móvil.
+===============================================================================

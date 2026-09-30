@@ -1,0 +1,21 @@
+===============================================================================
+CONFIGURACIÓN DE ARDUINO IDE PARA COMPILAR CENTINELA v2.0
+===============================================================================
+1. INSTALACIÓN DEL PAQUETE ESP32:
+   - Ir a: Archivo -> Preferencias -> Gestor de URLs Adicionales de Tarjetas.
+   - Agregar la URL oficial de Espressif:
+     https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+   - Ir a: Herramientas -> Placa -> Gestor de tarjetas.
+   - Buscar "esp32" de Espressif Systems e instalar la versión 2.0.x o superior.
+
+2. PARÁMETROS EN EL MENÚ HERRAMIENTAS:
+   - Placa:               "ESP32 Dev Module"
+   - CPU Frequency:       240 MHz (WiFi/BT)
+   - Flash Frequency:     80 MHz
+   - Flash Mode:          QIO o DIO
+   - Flash Size:          4MB (32Mb)
+   - Partition Scheme:    Default 4MB with spiffs (1.2MB APP / 1.5MB SPIFFS)
+   - Core Debug Level:    Ninguno (None)
+   - Upload Speed:        921600 baudios (o 115200 si hay fallos en el cable USB)
+   - Puerto COM:          Seleccionar el puerto serie del chip CP2102 o CH340.
+===============================================================================

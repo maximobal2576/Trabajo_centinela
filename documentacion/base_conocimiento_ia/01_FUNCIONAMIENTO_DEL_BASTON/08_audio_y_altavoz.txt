@@ -1,0 +1,30 @@
+===============================================================================
+SISTEMA DE AUDIO DIGITAL Y ALTAVOZ (I2S + TRRS)
+===============================================================================
+1. PROPÓSITO:
+   Emitir indicaciones de voz, balizas sonoras y alertas acústicas de alta
+   claridad sin zumbidos ni interferencias eléctricas.
+
+2. HARDWARE:
+   - DAC Amplificador: MAX98357A (potencia de salida de 3.2W en mono).
+   - Altavoz integrado: Cono de 4Ω / 3W montado en la estructura del bastón.
+   - Conector Jack 3.5mm: TRRS con interruptor de detección mecánica de inserción.
+
+3. CONEXIONES DEL BUS DIGITAL I2S:
+   - Bit Clock (BCK):         GPIO 26.
+   - Word Select (WS/LRCK):   GPIO 25.
+   - Data In (DIN):           GPIO 27.
+   - Shutdown / Mute (SD):    GPIO 32 (Control de apagado del amplificador).
+   - Jack Detect:             GPIO 33 (INPUT_PULLUP, detecta inserción de auriculares).
+
+4. LÓGICA DE CONMUTACIÓN INTELIGENTE:
+   - Auriculares NO conectados:
+     * El amplificador MAX98357A se habilita cuando hay muestras de audio disponibles.
+     * El audio se emite por el altavoz público del bastón.
+   - Auriculares CONECTADOS (GPIO 33 == LOW):
+     * El pin SD del MAX98357A se fuerza a LOW de inmediato (apagado total).
+     * El audio viaja únicamente por la salida física cableada a los auriculares,
+       asegurando privacidad auditiva y evitando acoples.
+   - Sin audio:
+     * El amplificador se apaga para que no consuma energía (<0.6µA en shutdown).
+===============================================================================

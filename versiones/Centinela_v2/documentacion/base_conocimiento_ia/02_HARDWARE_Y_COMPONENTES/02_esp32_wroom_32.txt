@@ -1,0 +1,21 @@
+===============================================================================
+MICROCONTROLADOR CENTRAL: ESP32-WROOM-32
+===============================================================================
+1. ESPECIFICACIONES TÉCNICAS:
+   - Procesador: Tensilica Xtensa Dual-Core 32-bit LX6.
+   - Frecuencia de reloj: 240 MHz.
+   - Memoria SRAM: 520 KB.
+   - Memoria Flash externa: 4 MB SPI.
+   - Conectividad inalámbrica: Wi-Fi 802.11 b/g/n y Bluetooth v4.2 BR/EDR y BLE.
+   - Puertos UART por hardware: 3 puertos (Serial USB, Serial1, Serial2).
+   - Canales PWM: Controlador LEDC con resolución programable de hasta 16 bits.
+   - Buses: I2C (Wire), SPI, I2S para audio de alta fidelidad.
+   - Convertidor Analógico-Digital (ADC): 12 bits de resolución (valores de 0 a 4095).
+
+2. ROL EN CENTINELA v2.0:
+   - Núcleo de cálculo en tiempo real sin dependencias de sistemas operativos pesados.
+   - Ejecuta el planificador cooperativo (Scheduler) que sincroniza los 12 módulos.
+   - Mantiene la pila Bluetooth Classic (SPP) abierta para enlace con CentinelaApp.
+   - Procesa tramas satelitales NMEA provenientes del GPS en segundo plano.
+   - Controla el generador PWM de los 3 motores hápticos y el bus DMA de audio I2S.
+===============================================================================

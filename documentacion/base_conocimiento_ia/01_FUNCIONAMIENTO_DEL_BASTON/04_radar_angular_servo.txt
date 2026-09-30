@@ -1,0 +1,30 @@
+===============================================================================
+RADAR ANGULAR CON SERVOMOTOR (HC-SR04 + SG90)
+===============================================================================
+1. PROPÓSITO:
+   Escanear el espacio perimétrico a los lados del usuario para advertir sobre
+   obstáculos laterales o en diagonal antes de que colisione con ellos.
+
+2. PINES DE CONEXIÓN:
+   - SEÑAL SERVO SG90: GPIO 13 (PWM generado por librería ESP32Servo).
+   - TRIGGER RADAR:    GPIO 2 (Salida digital).
+   - ECHO RADAR:       GPIO 39 (Entrada analógica/digital con divisor resistivo).
+
+3. CINEMÁTICA DEL BARRIDO:
+   - Ángulo inicial: 45° (Izquierda).
+   - Ángulo central: 90° (Centro).
+   - Ángulo final:   135° (Derecha).
+   - Paso angular:   5° por cada invocación del Scheduler (cada 60 ms).
+   - Al alcanzar 135°, la dirección de giro se invierte hacia 45° en vaivén continuo.
+
+4. DISCRETIZACIÓN EN TRES ZONAS ESPACIALES:
+   - Zona Izquierda: Ángulo <= 67° -> Actualiza Estado::sensores.radarIzquierda.
+   - Zona Central:   Ángulo entre 68° y 112° -> Actualiza Estado::sensores.radarCentro.
+   - Zona Derecha:   Ángulo >= 113° -> Actualiza Estado::sensores.radarDerecha.
+
+5. RESPUESTA HÁPTICA:
+   - Obstáculo solo a la izquierda -> Activa motor IZQUIERDO.
+   - Obstáculo solo a la derecha   -> Activa motor DERECHO.
+   - Obstáculo al centro           -> Activa motor CENTRAL.
+   - Obstáculo en diagonal         -> Activa combinaciones (Izq+Centro o Der+Centro).
+===============================================================================

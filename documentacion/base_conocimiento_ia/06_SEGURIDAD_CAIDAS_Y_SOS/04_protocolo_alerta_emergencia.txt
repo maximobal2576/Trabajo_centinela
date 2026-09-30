@@ -1,0 +1,21 @@
+===============================================================================
+PROTOCOLO INTEGRAL DE ALERTA DE EMERGENCIA (FIRMWARE + APP)
+===============================================================================
+1. ACCIONES EJECUTADAS POR EL BASTÓN:
+   - Los 3 canales LEDC (motores Izquierdo, Central y Derecho) alternan pulsos
+     intermitentes al 100% de potencia (PWM 255) cada 200 ms.
+   - Si los auriculares están desconectados, se puede activar una baliza acústica
+     a través del altavoz de 3.2W.
+   - Se despachan de forma prioritaria los mensajes Bluetooth:
+     * "EVENTO:EMERGENCIA"
+     * "SOS:1"
+     * "GPS:<lat>,<lon>,<fix>"
+
+2. ACCIONES EJECUTADAS POR LA APLICACIÓN (CENTINELAAPP):
+   - Genera una alerta sonora de máximo volumen en el teléfono móvil del usuario.
+   - Lee las coordenadas satelitales recibidas por el bastón (o utiliza el GPS del teléfono
+     si el receptor del bastón carece de línea de vista satelital).
+   - Envía automáticamente un mensaje SMS o notificación de socorro a los contactos de
+     confianza registrados con enlace directo a Google Maps con la ubicación exacta.
+   - Inicia llamada automática a servicios de emergencia o al número de contacto primario.
+===============================================================================

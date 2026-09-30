@@ -1,0 +1,23 @@
+===============================================================================
+FILTRO EXPONENCIAL DE SUAVIZADO PARA LECTURA DE BATERÍA
+===============================================================================
+1. PROBLEMA DE RUIDO:
+   Cuando los motores vibradores o el servomotor se activan, la demanda instantánea
+   de corriente produce pequeñas caídas transitorias de voltaje (ripple) que harían
+   oscilar el porcentaje de batería de forma molesta e inexacta.
+
+2. FÓRMULA DE PROMEDIO MÓVIL PONDERADO (BATERIA.CPP):
+   static int lecturaSuavizada = 0;
+   int lectura = analogRead(PIN_BATERIA);
+   if (lecturaSuavizada == 0) {
+       lecturaSuavizada = lectura; // Inicialización en el primer arranque
+   } else {
+       // Ponderación: 7/8 del valor acumulado + 1/8 de la muestra nueva
+       lecturaSuavizada = (lecturaSuavizada * 7 + lectura) / 8;
+   }
+
+3. VENTAJAS:
+   - No requiere arreglos masivos en memoria RAM para almacenar decenas de muestras.
+   - Es una operación matemática entera ultra-rápida (desplazamientos de bits eficientes).
+   - Elimina picos espurios y ofrece una curva de descarga limpia y monótona.
+===============================================================================

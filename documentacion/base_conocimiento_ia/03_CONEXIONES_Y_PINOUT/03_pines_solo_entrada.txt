@@ -1,0 +1,19 @@
+===============================================================================
+PINES "SOLO ENTRADA" DEL ESP32: GPIO 34, 35, 36 Y 39 (GPI)
+===============================================================================
+1. CARACTERÍSTICA DE HARDWARE:
+   - En el silicio del ESP32, los terminales GPIO 34, 35, 36 (SENSOR_VP) y 39 (SENSOR_VN)
+     son pines de entrada exclusivamente (General Purpose Input - GPI).
+   - No cuentan con transistores internos de salida (no pueden hacer digitalWrite HIGH/LOW ni PWM).
+   - Tampoco disponen de resistencias internas programables de PULLUP o PULLDOWN.
+
+2. APROVECHAMIENTO ÓPTIMO EN CENTINELA v2.0:
+   - Dado que los ecos de los sensores ultrasónicos y la medición de batería son señales
+     que únicamente ingresan al microcontrolador, se asignaron deliberadamente a estos pines:
+     * GPIO 34: Entrada analógica ADC para monitoreo del voltaje de batería.
+     * GPIO 35: Entrada digital de tiempo de vuelo ECHO del sensor ultrasónico Frontal.
+     * GPIO 36: Entrada digital de tiempo de vuelo ECHO del sensor ultrasónico de Suelo.
+     * GPIO 39: Entrada digital de tiempo de vuelo ECHO del sensor ultrasónico de Radar.
+   - De este modo, los pines bidireccionales con capacidad de salida (GPIO 2, 4, 5, 13, 18, 19, 23, etc.)
+     quedan libres para excitar motores, controlar el servomotor y disparar los pulsos Trigger.
+===============================================================================

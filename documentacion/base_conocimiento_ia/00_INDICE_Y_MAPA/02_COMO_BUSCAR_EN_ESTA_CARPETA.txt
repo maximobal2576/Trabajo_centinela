@@ -1,0 +1,34 @@
+===============================================================================
+GUÍA DE BÚSQUEDA RÁPIDA PARA MODELOS DE IA Y DESARROLLADORES HUMANOS
+===============================================================================
+
+¿CÓMO UTILIZAR ESTA BASE DE CONOCIMIENTO?
+-------------------------------------------------------------------------------
+1. ESTRUCTURA ATÓMICA:
+   Cada archivo .txt responde de forma directa, técnica y concisa a una única
+   pregunta o tema específico. No es necesario leer archivos masivos de cientos
+   de líneas.
+
+2. BÚSQUEDAS COMUNES Y ARCHIVOS CORRESPONDIENTES:
+   - ¿Qué pines usa un sensor o actuador?
+     -> Abrir: 03_CONEXIONES_Y_PINOUT/01_tabla_pines_gpio_esp32.txt
+   - ¿Cómo funciona la detección de pozos o desniveles?
+     -> Abrir: 01_FUNCIONAMIENTO_DEL_BASTON/03_sensor_suelo_hcsr04.txt
+   - ¿Cómo detecta si la persona se cayó?
+     -> Abrir: 06_SEGURIDAD_CAIDAS_Y_SOS/01_algoritmo_caida_libre.txt
+   - ¿Cómo se comunica con el celular por Bluetooth?
+     -> Abrir: 04_ENLACE_APP_BLUETOOTH/01_modo_bluetooth_spp.txt
+   - ¿Qué trama de telemetría envía el bastón?
+     -> Abrir: 04_ENLACE_APP_BLUETOOTH/02_telemetria_baston_a_app.txt
+   - ¿Cómo conmuta el audio entre el altavoz y los auriculares?
+     -> Abrir: 07_AUDIO_ACUSTICA_Y_VOZ/02_conmutacion_parlante_auricular.txt
+   - ¿Cómo se compila en Arduino IDE y qué librerías faltan?
+     -> Abrir: 10_GUIA_DE_COMPILACION_Y_SUBIDA/01_configuracion_arduino_ide.txt
+   - ¿Cómo calcula la batería y qué circuito tiene?
+     -> Abrir: 09_ENERGIA_Y_BATERIA/02_medicion_adc_12_bits.txt
+
+3. REGLA DE RETENCIÓN DE TOKENS PARA MODELOS DE IA:
+   Si un modelo de lenguaje necesita responder una duda puntual, puede leer
+   únicamente el archivo específico que contiene el dato sin necesidad de
+   cargar el proyecto completo a contexto.
+===============================================================================

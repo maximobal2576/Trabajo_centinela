@@ -1,0 +1,30 @@
+===============================================================================
+SISTEMA DE VIBRACIÓN HÁPTICA Y NIVELES PWM
+===============================================================================
+1. PROPÓSITO:
+   Transmitir al usuario la dirección espacial y la proximidad de los obstáculos
+   a través del sentido del tacto en la empuñadura del bastón.
+
+2. ASIGNACIÓN DE MOTORES Y CANALES LEDC DEL ESP32:
+   - Motor Izquierdo: GPIO 4  | Canal LEDC 0 | Frecuencia: 5000 Hz | 8 bits (0-255).
+   - Motor Centro:    GPIO 5  | Canal LEDC 1 | Frecuencia: 5000 Hz | 8 bits (0-255).
+   - Motor Derecho:   GPIO 18 | Canal LEDC 2 | Frecuencia: 5000 Hz | 8 bits (0-255).
+
+3. FÓRMULA DE INTENSIDAD PROPORCIONAL:
+   La intensidad varía de forma inversamente proporcional a la distancia:
+   - Si distancia <= DISTANCIA_PELIGRO (20 cm) -> PWM_MAXIMO = 255.
+   - Si distancia >= DISTANCIA_ALERTA_MAX (80 cm) -> PWM_SUAVE = 80.
+   - En el rango intermedio [20 cm, 80 cm]:
+     intensidad = map(distancia, 80, 20, PWM_SUAVE, PWM_MAXIMO);
+
+4. CONSTANTES DE CALIBRACIÓN:
+   - PWM_SUAVE   = 80  (Aviso de precaución lejano).
+   - PWM_MEDIO   = 150 (Aproximación intermedia).
+   - PWM_FUERTE  = 210 (Obstáculo próximo).
+   - PWM_MAXIMO  = 255 (Peligro crítico inminente).
+   - PWM_POZO    = 130 (Desnivel en el suelo).
+
+5. PATRONES ESPECIALES DE VIBRACIÓN:
+   - EMERGENCIA / CAÍDA: Los 3 motores alternan pulsos encendido/apagado
+     (PWM 255 y 0) cada 200 ms, generando una alarma táctil inconfundible.
+===============================================================================

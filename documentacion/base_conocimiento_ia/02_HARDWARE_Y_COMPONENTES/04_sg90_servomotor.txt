@@ -1,0 +1,18 @@
+===============================================================================
+SERVOMOTOR DEL RADAR: TOWERPRO SG90 (9 GRAMOS)
+===============================================================================
+1. ESPECIFICACIONES ELÉCTRICAS Y MECÁNICAS:
+   - Voltaje de operación: 4.8V a 5.0V DC.
+   - Par motor (Torque): 1.6 kg·cm (a 4.8V).
+   - Velocidad de giro: 0.12 s / 60 grados.
+   - Peso del servomotor: 9 gramos.
+   - Rango de rotación físico: 0° a 180°.
+   - Consumo pico en movimiento: hasta 200 mA.
+
+2. APLICACIÓN EN EL PROYECTO CENTINELA v2.0:
+   - El sensor HC-SR04 de radar está fijado mecánicamente sobre el eje del servo.
+   - El servo se programa para barrer un abanico angular de 45° a 135° (90° de arco útil).
+   - El pin de señal se conecta a GPIO 13.
+   - Se emplea la librería "ESP32Servo" de Kevin Harrington, que utiliza los temporizadores
+     internos del ESP32 para emitir pulsos PWM de 50 Hz sin congelar el procesador.
+===============================================================================

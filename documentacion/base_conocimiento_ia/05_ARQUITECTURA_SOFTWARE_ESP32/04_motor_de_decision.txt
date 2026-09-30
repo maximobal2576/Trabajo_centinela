@@ -1,0 +1,39 @@
+===============================================================================
+LÓGICA DEL MOTOR DE DECISIÓN (DECISION.CPP)
+===============================================================================
+1. RESPONSABILIDAD:
+   Leer las variables de Estado::sensores y calcular los valores de vibración
+   en Estado::salida, así como determinar el estado del sistema en Estado::sistema.
+
+2. ORDEN ESTRICTO DE EVALUACIÓN DE PRIORIDADES:
+
+   PASO 1: BOTÓN SOS (Prioridad Crítica = 3)
+   - Si botonSosPresionado es true:
+     * eventoActual = EVENTO_EMERGENCIA.
+     * estado = SISTEMA_EMERGENCIA.
+     * Retorna inmediatamente para no ser sobreescrito por ningún sensor.
+
+   PASO 2: CAÍDA / IMPACTO MPU-6050 (Prioridad Crítica = 3)
+   - Si caidaDetectada es true:
+     * eventoActual = EVENTO_CAIDA.
+     * estado = SISTEMA_CAIDA.
+     * Todos los motores (Izq, Centro, Der) se fijan en PWM_MAXIMO (255).
+
+   PASO 3: POZO / DESNIVEL EN SUELO (Prioridad Alta = 2)
+   - Si sensor de suelo > DISTANCIA_ALERTA_MAX (80 cm):
+     * eventoActual = EVENTO_POZO.
+     * direccion = DIRECCION_SUELO.
+     * motorCentro = PWM_POZO (130).
+
+   PASO 4: OBSTÁCULOS FRONTALES Y RADAR (Prioridad Normal = 1)
+   - Si frontal <= 80 cm:
+     * motorCentro = max(motorCentro, calcularIntensidad(frontal)).
+   - Si radarIzquierda <= 80 cm -> motorIzquierdo = calcularIntensidad(radarIzquierda).
+   - Si radarDerecha <= 80 cm   -> motorDerecho   = calcularIntensidad(radarDerecha).
+   - Clasifica la dirección entre IZQUIERDA, DERECHA, CENTRO o DIAGONALES.
+
+   PASO 5: OPERACIÓN NORMAL (Prioridad Baja = 0)
+   - Si no hay ningún peligro detectado:
+     * Todos los motores se apagan (PWM = 0).
+     * estado = SISTEMA_NORMAL.
+===============================================================================

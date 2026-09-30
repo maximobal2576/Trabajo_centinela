@@ -1,0 +1,23 @@
+===============================================================================
+ACTUADORES HÁPTICOS Y DRIVERS: MOTORES MONEDA + MOSFETS CANAL N
+===============================================================================
+1. MOTORES DE VIBRACIÓN (TIPO MONEDA / COIN VIBRATION MOTOR):
+   - Tipo: Motores DC sin núcleo con masa excéntrica giratoria (ERM).
+   - Tensión nominal: 3.0V a 5.0V DC.
+   - Diámetro: 10 mm | Grosor: 3 mm.
+   - Corriente de arranque: hasta 100 mA por motor.
+   - Frecuencia de vibración: ~12.000 RPM a 5V.
+   - Ubicación: Empuñadura ergonómica del bastón (Izquierda, Centro, Derecha).
+
+2. DRIVERS DE CONMUTACIÓN MOSFET CANAL N:
+   - Justificación: Los pines del ESP32 solo pueden drenar/entregar un máximo
+     de 12 mA a 20 mA de corriente de forma segura. Conectar los motores directo
+     al microcontrolador dañaría el silicio.
+   - Tipo de transistor: MOSFET Canal N de nivel lógico (Logic Level), ej. 2N7002,
+     IRLML2502 o BSS138.
+   - Disparo por compuerta (Gate): Se activa con nivel lógico 3.3V (Vgs(th) < 1.5V).
+   - Diodo de protección (Flyback): Diodo 1N4148 en antiparalelo con cada motor
+     para extinguir picos inductivos que pudieran destruir el transistor.
+   - Resistencia de pull-down: Resistencia de 10kΩ entre Gate y GND para evitar
+     que el motor vibre de forma parásita durante el reinicio del ESP32.
+===============================================================================

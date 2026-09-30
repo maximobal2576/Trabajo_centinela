@@ -1,0 +1,20 @@
+===============================================================================
+LIBRERÍAS EXTERNAS REQUERIDAS Y CÓMO INSTALARLAS
+===============================================================================
+1. LIBRERÍA DE SERVOMOTOR:
+   - Nombre:   ESP32Servo
+   - Autor:    Kevin Harrington
+   - Método:   En Arduino IDE -> Herramientas -> Administrar bibliotecas -> Buscar "ESP32Servo".
+   - Función:  Genera pulsos PWM precisos para el SG90 usando temporizadores hardware del ESP32.
+
+2. LIBRERÍA DEL SENSOR INERCIAL:
+   - Nombre:   MPU6050_light
+   - Autor:    rfetick
+   - Método:   En Arduino IDE -> Administrar bibliotecas -> Buscar "MPU6050_light".
+   - Función:  Cálculo ágil de aceleraciones vectoriales (AccX, AccY, AccZ) y giroscopio.
+
+3. LIBRERÍAS NATIVAS (NO REQUIEREN INSTALACIÓN ADICIONAL):
+   - BluetoothSerial.h: Incluida de fábrica en el paquete de placas ESP32.
+   - Wire.h:            Librería estándar de comunicación I2C.
+   - driver/i2s.h:      Driver nativo del framework ESP-IDF para streaming de audio I2S.
+===============================================================================

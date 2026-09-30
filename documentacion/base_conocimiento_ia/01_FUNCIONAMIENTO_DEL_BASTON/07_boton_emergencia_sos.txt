@@ -1,0 +1,31 @@
+===============================================================================
+BOTÓN FÍSICO DE EMERGENCIA (SOS) Y FILTRADO ANTIRREBOTE
+===============================================================================
+1. PROPÓSITO:
+   Permitir al usuario solicitar auxilio inmediato ante situaciones de peligro,
+   desorientación o agresión con solo presionar un botón táctil en el mango.
+
+2. CONEXIÓN ELÉCTRICA:
+   - Pin ESP32: GPIO 15.
+   - Modo de pin: INPUT_PULLUP (la resistencia interna mantiene la línea en 3.3V).
+   - Pulsador: Conectado entre GPIO 15 y GND (Masa).
+   - Lógica: Presionado = LOW (0V) | Reposo = HIGH (3.3V).
+
+3. FILTRO ANTIRREBOTE POR SOFTWARE (DEBOUNCE):
+   - Constante: SOS_DEBOUNCE_MS = 50 milisegundos.
+   - Algoritmo:
+     * Si la lectura digital cambia respecto al último estado físico conocido,
+       se guarda la marca de tiempo (millis()).
+     * Solo si el nuevo estado persiste de forma ininterrumpida durante más
+       de 50 ms se confirma el cambio como una pulsación real y deliberada.
+     * Esto elimina falsas activaciones generadas por rebotes mecánicos o vibración.
+
+4. ACCIONES ANTE CONFIRMACIÓN DE SOS:
+   - Estado: SISTEMA_EMERGENCIA con PRIORIDAD_CRITICA (3).
+   - Motores: Patrón rítmico intermitente de alerta a máxima potencia (PWM 255).
+   - Bluetooth: Envía de inmediato los comandos ASCII:
+     "EVENTO:EMERGENCIA"
+     "SOS:1"
+   - La aplicación CentinelaApp recibe la alerta y dispara el protocolo de emergencia
+     con las coordenadas satelitales obtenidas por el GPS.
+===============================================================================

@@ -1,0 +1,45 @@
+===============================================================================
+DEFINICIÓN DE TIPOS Y ESTRUCTURAS: TIPOS.H
+===============================================================================
+1. ENUMERACIONES (ENUMS):
+
+   enum Evento {
+       EVENTO_NORMAL,            // Operación despejada
+       EVENTO_OBSTACULO_FRONTAL, // Detección frontal fija
+       EVENTO_OBSTACULO_RADAR,   // Detección en barrido móvil
+       EVENTO_POZO,              // Desnivel abrupto en el suelo
+       EVENTO_CAIDA,             // Caída libre o golpe MPU-6050
+       EVENTO_EMERGENCIA,        // Pulsador SOS presionado
+       EVENTO_BATERIA_BAJA,      // Batería por debajo del 15%
+       EVENTO_ERROR              // Falla en subsistema crítico
+   };
+
+   enum EstadoSistema {
+       SISTEMA_INICIO,           // Arranque y calibración inicial
+       SISTEMA_NORMAL,           // Operación rutinaria activa
+       SISTEMA_ALERTA,           // Obstáculo cercano detectado
+       SISTEMA_POZO,             // Peligro de desnivel o bache
+       SISTEMA_CAIDA,            // Protocolo de caída activo
+       SISTEMA_EMERGENCIA,       // Protocolo de auxilio SOS activo
+       SISTEMA_DIAGNOSTICO,      // Modo de prueba serial
+       SISTEMA_ERROR             // Estado bloqueado por fallo
+   };
+
+   enum Direccion {
+       DIRECCION_NINGUNA,
+       DIRECCION_IZQUIERDA,
+       DIRECCION_DIAGONAL_IZQUIERDA,
+       DIRECCION_CENTRO,
+       DIRECCION_DIAGONAL_DERECHA,
+       DIRECCION_DERECHA,
+       DIRECCION_FRONTAL,
+       DIRECCION_SUELO
+   };
+
+   enum Prioridad {
+       PRIORIDAD_BAJA    = 0,
+       PRIORIDAD_NORMAL  = 1,
+       PRIORIDAD_ALTA    = 2,
+       PRIORIDAD_CRITICA = 3
+   };
+===============================================================================

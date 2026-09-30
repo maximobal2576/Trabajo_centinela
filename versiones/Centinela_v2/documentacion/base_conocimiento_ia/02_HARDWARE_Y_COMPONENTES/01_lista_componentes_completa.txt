@@ -1,0 +1,25 @@
+===============================================================================
+LISTA COMPLETA DE COMPONENTES DEL SISTEMA CENTINELA v2.0
+===============================================================================
+#   COMPONENTE                  FUNCIÓN TÉCNICA PRINCIPAL
+-------------------------------------------------------------------------------
+1   ESP32-WROOM-32              Microcontrolador central dual core 240 MHz.
+2   HC-SR04 Frontal             Sensor ultrasónico para obstáculos frontales.
+3   HC-SR04 Suelo               Sensor ultrasónico para pozos y desniveles.
+4   HC-SR04 Radar               Sensor ultrasónico móvil para barrido lateral.
+5   Servomotor SG90             Actuador angular de 9g para barrido de 45° a 135°.
+6   MPU-6050                    Sensor inercial (acelerómetro y giroscopio) I2C.
+7   Motor vibrador Izquierdo    Feedback táctil para el sector izquierdo.
+8   Motor vibrador Central      Feedback táctil para el sector frontal/suelo.
+9   Motor vibrador Derecho      Feedback táctil para el sector derecho.
+10  3x MOSFETs Canal N          Transistores de conmutación lógica (3.3V a 5V).
+11  MAX98357A                   Módulo DAC y amplificador de audio digital I2S 3.2W.
+12  Altavoz 4Ω / 3W             Emisor acústico para navegación y balizas sonoras.
+13  Placa Jack TRRS 3.5mm       Conector hembra 4 contactos con pin de detección.
+14  Micrófono Electret / Módulo Captura analógica de voz para enviar a la app.
+15  GPS NEO-6M                  Receptor satelital con antena cerámica (Serial2).
+16  Pulsador de Emergencia SOS  Botón normalmente abierto a masa para auxilio.
+17  2x Baterías Li-Ion 18650    Banco de energía en serie (7.4V nom, 8.4V max).
+18  Regulador Step-Down (DC-DC) Conversor reductor de alta eficiencia (5V y 3.3V).
+19  Interruptor + Fusible       Protección contra sobrecorriente y encendido general.
+===============================================================================

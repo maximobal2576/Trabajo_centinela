@@ -1,0 +1,32 @@
+===============================================================================
+DRIVER DE AUDIO I2S: CONFIGURACIÓN EN ESP32 (AUDIO.CPP)
+===============================================================================
+1. INICIALIZACIÓN DEL DRIVER I2S (I2S_NUM_0):
+   i2s_config_t cfg = {
+       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
+       .sample_rate = AUDIO_SAMPLE_RATE,              // 16000 Hz
+       .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,  // 16 bits
+       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,   // Mono
+       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
+       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+       .dma_buf_count = I2S_DMA_BUF_COUNT,            // 8 buffers
+       .dma_buf_len = I2S_DMA_BUF_LEN,                // 512 muestras por buffer
+       .use_apll = false,
+       .tx_desc_auto_clear = true,
+       .fixed_mclk = 0
+   };
+
+2. ASIGNACIÓN DE PINES:
+   i2s_pin_config_t pines = {
+       .bck_io_num = I2S_BCK_PIN,       // GPIO 26
+       .ws_io_num = I2S_WS_PIN,         // GPIO 25
+       .data_out_num = I2S_DATA_PIN,    // GPIO 27
+       .data_in_num = I2S_PIN_NO_CHANGE
+   };
+
+3. TRANSMISIÓN POR DMA:
+   Las muestras de audio se transfieren directamente desde el buffer de Bluetooth
+   hacia los buffers circulares de Acceso Directo a Memoria (DMA) mediante la llamada
+   i2s_write(I2S_PORT, tmpBuf, aLeer, &bytesEscritos, portMAX_DELAY), liberando
+   al procesador para seguir ejecutando el resto de las tareas de control.
+===============================================================================

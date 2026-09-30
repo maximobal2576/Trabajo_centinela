@@ -1,0 +1,37 @@
+===============================================================================
+DIAGNÓSTICO EN TIEMPO REAL POR PUERTO SERIE USB (DIAGNOSTICO.CPP)
+===============================================================================
+1. VELOCIDAD:
+   - 115200 baudios (8 bits de datos, sin paridad, 1 bit de parada - 8N1).
+
+2. MENSAJES DE ARRANQUE (SETUP):
+   ======================================
+     CENTINELA v2.0 — SISTEMA INTEGRADO  
+     ESP32 + I2S + GPS + Micrófono + TRRS
+     Iniciando subsistemas de hardware...
+   ======================================
+   [+] MPU-6050 OK
+   [+] Módulo GPS NEO-6M iniciado en Serial2
+   [+] Audio I2S iniciado (MAX98357A + TRRS)
+   [+] BT SPP iniciado como: Centinela-Baston
+   ======================================
+     Centinela v2.0 — Listo y Operativo  
+     Esperando conexión de la app...     
+   ======================================
+
+3. REPORTE PERIÓDICO (CADA 1000 MS SI MODO_DIAGNOSTICO == TRUE):
+   ====================
+   Frontal:    45 cm
+   Suelo:      38 cm
+   Radar Izq:  80 cm
+   Radar Ctr:  45 cm
+   Radar Der:  120 cm
+   Angulo:     90
+   Evento:     1
+   Direccion:  3
+   Bateria:    85 %
+   BT:         CONECTADO
+   Audio I2S:  INACTIVO
+   AccX/Y/Z:   0.02 / 0.05 / 0.98
+   ====================
+===============================================================================

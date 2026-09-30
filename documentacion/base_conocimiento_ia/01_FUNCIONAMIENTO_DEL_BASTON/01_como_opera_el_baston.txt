@@ -1,0 +1,34 @@
+===============================================================================
+CÓMO OPERA EL BASTÓN CENTINELA v2.0 (CICLO DE FUNCIONAMIENTO)
+===============================================================================
+1. ARRANQUE:
+   - Al encender el interruptor de energía, el regulador Step-Down suministra
+     5V y 3.3V al circuito.
+   - El ESP32 inicia en su función setup():
+     * Configura el puerto serie USB a 115200 baudios.
+     * Inicia el bus I2C para el MPU-6050 y calibra offsets inerciales.
+     * Centra el servomotor del radar a 90° (posición frontal).
+     * Configura canales LEDC de PWM para los 3 motores vibradores.
+     * Inicia el driver de audio digital I2S y apaga el amplificador por seguridad.
+     * Abre el puerto Serial2 para recibir telemetría satelital del GPS NEO-6M.
+     * Inicia la pila Bluetooth Classic bajo el nombre "Centinela-Baston".
+     * Inicializa los temporizadores del planificador (Scheduler).
+   - El estado del sistema transiciona a SISTEMA_NORMAL.
+
+2. CICLO CONTINUO (LOOP NO BLOQUEANTE):
+   - Cada iteración del bucle ejecuta Scheduler::actualizar().
+   - Cada subsistema se ejecuta únicamente cuando expira su temporizador propio:
+     * Botón SOS cada 50 ms.
+     * MPU-6050 cada 20 ms.
+     * Sensores ultrasónicos cada 40 ms.
+     * Servo de radar cada 60 ms.
+     * Motor de decisión cada 20 ms.
+     * Actuadores de salida cada 20 ms.
+     * Telemetría Bluetooth cada 150 ms.
+     * GPS cada 200 ms.
+     * Batería cada 4000 ms.
+     * Micrófono: se muestrea en cada ciclo sin retardo para no perder muestras de voz.
+
+3. FLUJO DE SEÑAL Y TOMA DE DECISIÓN:
+   Sensores -> Estado::sensores -> Decision::actualizar() -> Estado::salida -> Motores / Audio.
+===============================================================================

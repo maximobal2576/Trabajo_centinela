@@ -1,0 +1,36 @@
+===============================================================================
+ESTADO GLOBAL DEL SISTEMA: CLASE ESTÁTICA "ESTADO" (SINGLETON)
+===============================================================================
+1. PROPÓSITO:
+   Desacoplar los módulos de hardware entre sí mediante una estructura central
+   donde los sensores depositan datos y los actuadores leen órdenes sin llamarse directamente.
+
+2. ESTRUCTURAS PRINCIPALES DE DATOS:
+
+   A) Estado::sensores (DatosSensores):
+      - int frontal, suelo;
+      - int radarIzquierda, radarCentro, radarDerecha, anguloRadar;
+      - float inclinacionX, inclinacionY, inclinacionZ;
+      - bool movimientoDetectado, caidaDetectada, botonSosPresionado;
+
+   B) Estado::salida (DatosSalida):
+      - int motorIzquierdo, motorCentro, motorDerecho; (Valores PWM de 0 a 255)
+      - bool reproducirAudio;
+      - int volumenI2S;
+
+   C) Estado::sistema (DatosSistema):
+      - EstadoSistema estado;           (SISTEMA_NORMAL, SISTEMA_ALERTA, SISTEMA_CAIDA, etc.)
+      - Evento eventoActual;            (EVENTO_OBSTACULO_FRONTAL, EVENTO_POZO, etc.)
+      - Prioridad prioridadActual;      (PRIORIDAD_BAJA a PRIORIDAD_CRITICA)
+      - Direccion direccion;            (DIRECCION_FRONTAL, DIRECCION_IZQUIERDA, etc.)
+      - int bateria;                    (0 a 100%)
+      - bool bluetoothConectado;
+      - bool auricularesConectados;
+      - float gpsLatitud, gpsLongitud;
+      - bool gpsFijado;
+
+   D) Estado::app (DatosApp):
+      - bool navegacionActiva;
+      - bool gpsDisponible;
+      - bool microfonoActivo;
+===============================================================================

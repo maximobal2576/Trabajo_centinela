@@ -1,0 +1,25 @@
+===============================================================================
+PARSEO DE SENTENCIAS SATELITALES NMEA ($GPRMC / $GNRMC)
+===============================================================================
+1. SENTENCIA OBJETIVO ($GPRMC):
+   Es la sentencia de datos mínimos recomendados de navegación emitida por el NEO-6M:
+   $GPRMC,hhmmss.ss,Status,Latitud,N/S,Longitud,E/W,Velocidad,Rumbo,Fecha,MagVar,E/W,Modo*CS
+
+2. EJEMPLO REAL Y CAMPOS TOKENIZADOS:
+   $GPRMC,183025.00,A,3436.1234,S,05822.5678,W,0.05,210.3,250926,,,A*7C
+   
+   Campo 1 (183025.00): Hora UTC (18:30:25).
+   Campo 2 (A):         Estado de fijación ('A' = Válido con fix | 'V' = Advertencia/Sin fix).
+   Campo 3 (3436.1234): Latitud en formato ddmm.mmmm (34 grados 36.1234 minutos).
+   Campo 4 (S):         Hemisferio de latitud ('N' = Norte, 'S' = Sur).
+   Campo 5 (05822.5678):Longitud en formato dddmm.mmmm (58 grados 22.5678 minutos).
+   Campo 6 (W):         Hemisferio de longitud ('E' = Este, 'W' = Oeste).
+
+3. VALIDACIÓN EN EL FIRMWARE:
+   - Si Status == 'A':
+     * Se convierten las coordenadas a grados decimales.
+     * Se guardan en Estado::sistema.gpsLatitud y Estado::sistema.gpsLongitud.
+     * Se fija Estado::sistema.gpsFijado = true.
+   - Si Status != 'A':
+     * Se marca Estado::sistema.gpsFijado = false (sin cobertura satelital).
+===============================================================================

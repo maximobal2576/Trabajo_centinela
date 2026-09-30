@@ -1,0 +1,21 @@
+===============================================================================
+ALGORITMO DE DETECCIÓN DE CAÍDA LIBRE (MPU-6050)
+===============================================================================
+1. FUNDAMENTO FÍSICO:
+   - En reposo, un acelerómetro sobre la superficie terrestre experimenta la gravedad (1G).
+   - Cuando un objeto entra en caída libre (se le resbala el bastón al usuario o la persona
+     se desploma), el marco de referencia inercial pasa a flotabilidad gravitacional aparente.
+   - La suma vectorial de los 3 ejes cae bruscamente hacia cero (0G).
+
+2. CÁLCULO EN FIRMWARE (MOVIMIENTO.CPP):
+   float x = mpu.getAccX();
+   float y = mpu.getAccY();
+   float z = mpu.getAccZ();
+   float modulo = sqrt(x*x + y*y + z*z);
+
+3. CRITERIO DE DISPARO:
+   - Constante: MPU_UMBRAL_CAIDA_LIBRE = 0.45f (en unidades de gravedad terrestre G).
+   - Si modulo > 0.15f Y modulo < 0.45f:
+     * El firmware determina que el bastón se encuentra en fase aérea de caída libre.
+     * Marca caidaDetectada = true.
+===============================================================================

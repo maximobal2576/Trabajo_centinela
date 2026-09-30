@@ -1,0 +1,23 @@
+===============================================================================
+MÓDULO DE GEOLOCALIZACIÓN SATELITAL: U-BLOX NEO-6M
+===============================================================================
+1. ESPECIFICACIONES:
+   - Chipset: u-blox 6 Receiver.
+   - Canales satelitales: 50 canales de rastreo GPS L1 C/A.
+   - Tasa de actualización de posición: 1 Hz a 5 Hz (por defecto 1 Hz).
+   - Sensibilidad de rastreo: -161 dBm.
+   - Antena: Cerámica activa tipo parche integrada de 25x25 mm.
+   - Batería de respaldo: Pila botón recargable integrada para arranque en caliente (Hot Start).
+   - Tensión de alimentación: 3.3V a 5.0V (regulador interno a 3.3V).
+   - Consumo de corriente: ~45 mA.
+
+2. CONEXIÓN POR PUERTO UART AL ESP32:
+   - TX del GPS -> Conectado a GPIO 16 (Pin RX2 por hardware del ESP32).
+   - RX del GPS -> Conectado a GPIO 17 (Pin TX2 por hardware del ESP32).
+   - Velocidad (Baudrate): 9600 baudios (SERIAL_8N1).
+
+3. FORMATO DE DATOS:
+   - Transmite cadenas de texto NMEA 0183 ($GPRMC, $GPGGA, $GPGSV, etc.).
+   - El firmware de Centinela v2.0 decodifica prioritariamente la sentencia $GPRMC
+     para extraer fecha, hora, validez de fijación satelital (A/V), latitud y longitud.
+===============================================================================

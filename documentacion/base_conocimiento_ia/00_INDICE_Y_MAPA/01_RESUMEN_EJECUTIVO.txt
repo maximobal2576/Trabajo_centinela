@@ -1,0 +1,24 @@
+===============================================================================
+CENTINELA v2.0 — RESUMEN EJECUTIVO (VISIÓN RÁPIDA)
+===============================================================================
+1. NOMBRE DEL PROYECTO: Centinela v2.0
+2. TIPO DE DISPOSITIVO: Bastón asistivo inteligente para personas con discapacidad visual.
+3. CEREBRO / CONTROLADOR: ESP32-WROOM-32 (Dual Core 240 MHz, WiFi y Bluetooth integrados).
+4. SENSORES DE PERCEPCIÓN:
+   - 3x Sensores ultrasónicos HC-SR04: Frontal (obstáculos al paso), Suelo (pozos y escalones)
+     y Radar móvil (barrido angular en 3 zonas).
+   - 1x Servomotor SG90 que mueve el sensor de radar de 45° a 135°.
+   - 1x Acelerómetro/Giroscopio MPU-6050 (I2C) para detección instantánea de caídas e impactos.
+5. ACTUADORES Y RESPUESTAS:
+   - 3x Motores vibradores hápticos PWM (Izquierdo, Central, Derecho) manejados por MOSFETs.
+   - 1x Módulo DAC I2S MAX98357A con altavoz de 3.2W y conector Jack TRRS de 3.5mm.
+6. GEOLOCALIZACIÓN Y ENLACE:
+   - 1x Receptor GPS NEO-6M conectado al puerto Serial2 por hardware.
+   - Enlace Bluetooth SPP con la aplicación móvil Android "CentinelaApp".
+   - 1x Botón de pánico SOS con filtrado antirrebote por software (50 ms).
+7. ALIMENTACIÓN:
+   - 2x Baterías Li-Ion 18650 en serie (7.4V nominal) con regulador Step-Down de alta eficiencia.
+   - Autonomía estimada de ~5.5 horas de uso continuo.
+8. ARQUITECTURA DE FIRMWARE:
+   - 12 módulos cooperativos coordinados por un Scheduler basado en millis() sin delay().
+===============================================================================

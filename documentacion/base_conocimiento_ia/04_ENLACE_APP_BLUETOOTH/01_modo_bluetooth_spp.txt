@@ -1,0 +1,24 @@
+===============================================================================
+ENLACE INALÁMBRICO: BLUETOOTH SPP (SERIAL PORT PROFILE)
+===============================================================================
+1. PROTOCOLO Y CONFIGURACIÓN:
+   - Tipo de Bluetooth: Bluetooth Classic v4.2 BR/EDR.
+   - Perfil de comunicación: Serial Port Profile (SPP), que emula un puerto serie
+     transparente bidireccional entre el ESP32 y el teléfono móvil Android.
+   - Clase de Arduino: BluetoothSerial (nativa del core ESP32).
+   - Nombre público de difusión: "Centinela-Baston".
+   - Código PIN de emparejamiento seguro: "1234".
+
+2. INICIALIZACIÓN EN EL FIRMWARE:
+   void Bluetooth::iniciar() {
+       bt.setPin("1234");
+       bt.begin("Centinela-Baston");
+       Estado::sistema.bluetoothConectado = false;
+   }
+
+3. NATURALEZA DUAL DEL CANAL:
+   A través del mismo socket RFCOMM del Bluetooth se transmiten dos tipos de tráfico:
+   - Tráfico de texto ASCII delimitado por salto de línea (\n): telemetría y comandos.
+   - Tráfico binario en tiempo real: tramas de audio PCM identificadas por la
+     cabecera mágica de sincronización (0xA5 0x5A).
+===============================================================================

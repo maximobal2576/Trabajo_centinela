@@ -1,0 +1,34 @@
+===============================================================================
+MECANISMO DE FILTRADO ANTIRREBOTE DEL BOTÓN SOS (EMERGENCIA.CPP)
+===============================================================================
+1. JUSTIFICACIÓN:
+   Los pulsadores mecánicos tienen contactos metálicos elásticos que rebotan
+   durante 5 a 20 ms al presionarse o soltarse, generando decenas de transiciones
+   falsas entre HIGH y LOW que podrían saturar el microcontrolador.
+
+2. IMPLEMENTACIÓN:
+   void Emergencia::actualizar() {
+       int lecturaFisica = digitalRead(PIN_BOTON_SOS);
+       if (lecturaFisica != _ultimoEstadoFisico) {
+           _ultimoCambio = millis();
+           _ultimoEstadoFisico = lecturaFisica;
+       }
+       if ((millis() - _ultimoCambio) > SOS_DEBOUNCE_MS) { // 50 ms
+           bool presionadoAhora = (lecturaFisica == NIVEL_SOS_PRESIONADO);
+           if (presionadoAhora != _estadoConfirmado) {
+               _estadoConfirmado = presionadoAhora;
+               Estado::sensores.botonSosPresionado = _estadoConfirmado;
+               Estado::sistema.botonSosPresionado  = _estadoConfirmado;
+               if (_estadoConfirmado) {
+                   Estado::sistema.eventoActual    = EVENTO_EMERGENCIA;
+                   Estado::sistema.estado          = SISTEMA_EMERGENCIA;
+                   Estado::sistema.prioridadActual = PRIORIDAD_CRITICA;
+                   if (Estado::sistema.bluetoothConectado) {
+                       Bluetooth::enviarComando("EVENTO:EMERGENCIA");
+                       Bluetooth::enviarComando("SOS:1");
+                   }
+               }
+           }
+       }
+   }
+===============================================================================

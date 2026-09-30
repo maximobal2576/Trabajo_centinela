@@ -1,0 +1,20 @@
+===============================================================================
+UMBRALES DE ALERTA DE BATERÍA BAJA Y RECUPERACIÓN HISTÉRICA
+===============================================================================
+1. CONSTANTES DEFINIDAS:
+   - BATERIA_UMBRAL_BAJA          = 15 %
+   - BATERIA_UMBRAL_RECUPERACION  = 18 %
+
+2. LÓGICA DE HISTÉRESIS (BATERIA.CPP):
+   - DISPARO DE ALARMA:
+     * Si bateria < 15%:
+       Estado::sistema.eventoActual    = EVENTO_BATERIA_BAJA;
+       Estado::sistema.prioridadActual = PRIORIDAD_ALTA;
+       La app recibe la notificación y alerta al usuario mediante voz para que recargue el bastón.
+   
+   - RETORNO AL ESTADO NORMAL:
+     * Si la batería se conecta al cargador y el porcentaje sube a 16% o 17%, la alarma
+       NO se apaga de inmediato para evitar que oscile entre alarma y normal repetidamente.
+     * Solo cuando supera o iguala el umbral de recuperación (>= 18%), el sistema
+       retorna formalmente a EVENTO_NORMAL con PRIORIDAD_BAJA.
+===============================================================================

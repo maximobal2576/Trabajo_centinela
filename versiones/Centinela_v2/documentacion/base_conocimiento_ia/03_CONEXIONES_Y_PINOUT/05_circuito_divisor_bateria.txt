@@ -1,0 +1,32 @@
+===============================================================================
+CIRCUITO DIVISOR DE TENSIÓN PARA MEDICIÓN DE BATERÍA (8.4V A ADC)
+===============================================================================
+1. DIAGRAMA ESQUEMÁTICO:
+
+   VBat (Pack 2S: 6.0V descargada a 8.4V plena carga)
+     │
+   [ R1 = 100 kΩ ]  (1% de tolerancia)
+     │
+     ├─────────── GPIO 34 (ADC1 Canal 6 del ESP32)
+     │
+   [ R2 = 33 kΩ ]   (1% de tolerancia)
+     │
+    GND
+
+2. CÁLCULO DE LA RELACIÓN DE DIVISIÓN:
+   Factor de atenuación:
+   K = R2 / (R1 + R2) = 33.000 / (100.000 + 33.000) = 33 / 133 ≈ 0.24812
+
+3. TENSIONES RESULTANTES EN EL PIN ANALÓGICO:
+   - Con batería llena (8.40 V):
+     Vpin = 8.40 V * 0.24812 = 2.084 V.
+   - Con batería nominal (7.40 V):
+     Vpin = 7.40 V * 0.24812 = 1.836 V.
+   - Con batería agotada (6.00 V):
+     Vpin = 6.00 V * 0.24812 = 1.488 V.
+
+4. SEGURIDAD DEL CONVERTIDOR ADC DEL ESP32:
+   - Con la atenuación por defecto del ADC a 11dB (rango de 0V a 2.6V - 3.1V),
+     la tensión máxima de 2.084V se encuentra holgadamente dentro de la zona
+     lineal del convertidor y jamás sobrepasa los 3.3V de seguridad del microcontrolador.
+===============================================================================

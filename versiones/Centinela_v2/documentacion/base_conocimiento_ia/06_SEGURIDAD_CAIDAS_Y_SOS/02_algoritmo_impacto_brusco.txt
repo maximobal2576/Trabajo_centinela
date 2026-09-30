@@ -1,0 +1,17 @@
+===============================================================================
+ALGORITMO DE DETECCIÓN DE IMPACTO BRUSCO / GOLPE (MPU-6050)
+===============================================================================
+1. FUNDAMENTO FÍSICO:
+   - Al terminar una caída libre y chocar el bastón o el usuario contra el pavimento,
+     se produce una desaceleración de altísima energía cinética en pocos milisegundos.
+   - La magnitud del vector aceleración experimenta un pico súbito que excede con creces
+     las fuerzas g generadas durante el uso normal del bastón.
+
+2. CRITERIO DE DISPARO:
+   - Constante: MPU_UMBRAL_GOLPE = 1.75f (G).
+   - Si modulo > 1.75f:
+     * El firmware confirma que el dispositivo sufrió un choque o caída violenta.
+     * Marca caidaDetectada = true.
+   - De esta forma, el sistema protege tanto en la fase previa (caída libre < 0.45G)
+     como en la fase de impacto (> 1.75G).
+===============================================================================

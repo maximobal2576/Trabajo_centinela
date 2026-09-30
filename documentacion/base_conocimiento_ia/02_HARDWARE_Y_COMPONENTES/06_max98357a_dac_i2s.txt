@@ -1,0 +1,20 @@
+===============================================================================
+DAC AMPLIFICADOR DIGITAL DE AUDIO: MAX98357A
+===============================================================================
+1. ESPECIFICACIONES PRINCIPALES:
+   - Tipo: Amplificador digital Clase D con convertidor DAC I2S integrado.
+   - Potencia de salida: 3.2W a 4Ω (con distorsión armónica THD+N del 10% a 5V).
+   - Tensión de alimentación: 2.5V a 5.5V DC (conectado al riel de 5V del bastón).
+   - Interfaz de datos: I2S estándar (Inter-IC Sound) con sincronización por DMA.
+   - Frecuencias de muestreo admitidas: 8 kHz a 96 kHz (configurado en 16 kHz).
+   - Modo de canal: Mono (canal izquierdo o suma estéreo).
+   - Modo de bajo consumo (Shutdown): Corriente menor a 0.6 microamperios.
+
+2. ASIGNACIÓN DE PINES:
+   - LRC / WS (Word Select): GPIO 25.
+   - BCLK (Bit Clock):       GPIO 26.
+   - DIN (Data Input):       GPIO 27.
+   - SD_MODE (Shutdown):     GPIO 32 (HIGH = Encendido, LOW = Apagado / Mute).
+   - VIN:                    5V DC.
+   - GND:                    Masa común.
+===============================================================================

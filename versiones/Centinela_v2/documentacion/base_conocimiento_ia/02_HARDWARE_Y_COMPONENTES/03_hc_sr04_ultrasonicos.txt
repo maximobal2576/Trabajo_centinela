@@ -1,0 +1,24 @@
+===============================================================================
+SENSORES ULTRASÓNICOS DE DISTANCIA: HC-SR04
+===============================================================================
+1. PARÁMETROS ELÉCTRICOS:
+   - Tensión de alimentación: 5.0 V DC.
+   - Corriente de reposo: < 2 mA.
+   - Corriente de trabajo en ráfaga: ~15 mA.
+   - Frecuencia ultrasónica: 40 kHz.
+   - Rango de medición efectivo: 2 cm a 400 cm.
+   - Ángulo cónico de detección: ~15 grados.
+   - Resolución: ~0.3 cm.
+
+2. PROTOCOLO DE DISPARO:
+   - Señal Trigger: Pulso lógico HIGH de 10 microsegundos.
+   - Señal Echo: Pulso de salida cuya duración en microsegundos es proporcional
+     al tiempo de ida y vuelta de la onda acústica.
+
+3. PRECAUCIÓN DE PROTECCIÓN (VOLTAJE DE SALIDA):
+   - El pin ECHO genera un pulso de nivel lógico de 5.0V.
+   - Los pines GPIO del ESP32 NO son tolerantes a 5V (máximo seguro: 3.6V).
+   - Solución obligatoria: Cada pin ECHO (GPIO 35, 36 y 39) cuenta con un
+     divisor de tensión formado por resistencias de R1=1kΩ y R2=2kΩ que reduce
+     los 5.0V a exactamente 3.33V antes de ingresar al microcontrolador.
+===============================================================================

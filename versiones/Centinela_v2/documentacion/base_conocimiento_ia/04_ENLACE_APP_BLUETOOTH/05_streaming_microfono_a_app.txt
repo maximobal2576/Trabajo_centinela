@@ -1,0 +1,27 @@
+===============================================================================
+CAPTURA DE VOZ DEL MICRÓFONO Y ENVÍO A LA APP (BASTÓN ➔ APP)
+===============================================================================
+1. PROPÓSITO:
+   Capturar la voz del usuario directamente desde el micrófono del bastón o de los
+   auriculares TRRS para procesar comandos por voz en la aplicación móvil.
+
+2. DETECCIÓN DE ACTIVIDAD DE VOZ (VAD):
+   - Muestreo analógico: Lectura de 12 bits (0 a 4095) en PIN_MICROFONO_ANALOGICO.
+   - Nivel de reposo DC: 2048 (Vcc / 2).
+   - Amplitud acústica = abs(muestra - 2048).
+   - Umbral de disparo: Si amplitud > MIC_UMBRAL_VOZ (200), se activa la grabación.
+   - Timeout de silencio: Si transcurren más de 700 ms sin superar el umbral,
+     se detiene automáticamente la captura.
+
+3. EMPAQUETADO Y CODIFICACIÓN BASE64:
+   - Las muestras se convierten a PCM firmado de 16 bits:
+     int16_t sample = (int16_t)((muestra - 2048) * 16);
+   - Se llena un búfer de 256 bytes (_chunkBuffer).
+   - Al llenarse o al finalizar la voz, se codifica en Base64 para garantizar
+     una transmisión transparente y segura sin corromper caracteres ASCII.
+
+4. PROTOCOLO DE MENSAJES TRANSMITIDOS:
+   1. "MIC_START\n"               -> Notifica a la app que comenzó la locución.
+   2. "MIC_CHUNK:<cadena_base64>\n" -> Ráfagas de audio digitalizado.
+   3. "MIC_STOP\n"                -> Notifica el fin de la captura.
+===============================================================================

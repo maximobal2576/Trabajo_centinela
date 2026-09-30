@@ -1,0 +1,20 @@
+===============================================================================
+MEDICIÓN ANALÓGICA DE BATERÍA (ADC 12 BITS EN GPIO 34)
+===============================================================================
+1. CONFIGURACIÓN DEL CONVERTIDOR A/D:
+   - Resolución: analogReadResolution(12) -> Valores enteros de 0 a 4095.
+   - Pin analógico: PIN_BATERIA = GPIO 34 (Canal ADC1_CH6).
+   - El circuito divisor atenúa la tensión de batería con relación K = 33/133 ≈ 0.2481.
+
+2. PUNTOS DE CALIBRACIÓN ADC EN EL CÓDIGO (CONFIGURACION.H):
+   - ADC_LECTURA_VACIA = 1910
+     Corresponde a la batería en su límite inferior seguro (~6.0 V a 6.2 V).
+   - ADC_LECTURA_LLENA = 2670
+     Corresponde a la batería al 100% de carga (8.40 V).
+
+3. MAPEO A PORCENTAJE (BATERIA.CPP):
+   int Bateria::calcularPorcentaje(int lectura) {
+       int porcentaje = map(lectura, ADC_LECTURA_VACIA, ADC_LECTURA_LLENA, 0, 100);
+       return constrain(porcentaje, 0, 100);
+   }
+===============================================================================

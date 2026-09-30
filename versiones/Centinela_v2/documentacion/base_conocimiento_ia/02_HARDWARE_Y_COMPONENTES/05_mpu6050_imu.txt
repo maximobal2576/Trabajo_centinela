@@ -1,0 +1,22 @@
+===============================================================================
+SENSOR INERCIAL: MPU-6050 (ACELERÓMETRO Y GIROSCOPIO DE 6 EJES)
+===============================================================================
+1. ESPECIFICACIONES:
+   - Chipset: InvenSense MPU-6050.
+   - Grados de libertad: 6 DOF (3 ejes de aceleración + 3 ejes de velocidad angular).
+   - Convertidores A/D internos: 16 bits de resolución para cada eje.
+   - Interfaz de comunicación: Bus I2C estándar (dirección por defecto: 0x68).
+   - Rango del acelerómetro: ±2G, ±4G, ±8G, ±16G (ajustado en ±2G por defecto).
+   - Voltaje de alimentación: 3.3V DC (suministrado por el riel regulado del ESP32).
+   - Corriente de operación: ~3.5 mA.
+
+2. CONEXIÓN AL ESP32:
+   - VCC: Conectado a 3.3V.
+   - GND: Conectado a Masa general.
+   - SDA: Conectado a GPIO 21.
+   - SCL: Conectado a GPIO 22.
+
+3. FUNCIÓN EN EL FIRMWARE:
+   - Monitorear la aceleración neta en reposo (1G vertical) y registrar las caídas
+     (cuando la aceleración cae < 0.45G) o impactos bruscos contra el suelo (> 1.75G).
+===============================================================================

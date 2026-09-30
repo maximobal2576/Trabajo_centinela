@@ -1,0 +1,26 @@
+===============================================================================
+DETECCIÓN DE ACTIVIDAD DE VOZ (VAD) EN MICRÓFONO
+===============================================================================
+1. JUSTIFICACIÓN:
+   Transmitir audio analógico de forma ininterrumpida saturaría el ancho de banda
+   del enlace Bluetooth Classic y consumiría batería innecesariamente cuando el usuario
+   no está hablando.
+
+2. ALGORITMO EN MICROFONO.CPP:
+   - Lectura analógica:
+     int muestra = analogRead(PIN_MICROFONO_ANALOGICO); // 0 a 4095
+     int amplitud = abs(muestra - 2048);                 // Nivel de señal respecto a Vcc/2
+   - Umbral de inicio:
+     if (amplitud > MIC_UMBRAL_VOZ) {                    // 200
+         _ultimoSonido = millis();
+         if (!_grabando) iniciarGrabacionManual();       // Envía "MIC_START\n"
+     }
+   - Muestreo activo y empaquetado:
+     int16_t pcmSample = (int16_t)((muestra - 2048) * 16);
+     _chunkBuffer[_chunkIndex++] = (uint8_t)(pcmSample & 0xFF);
+     _chunkBuffer[_chunkIndex++] = (uint8_t)((pcmSample >> 8) & 0xFF);
+   - Timeout de fin de locución:
+     if (millis() - _ultimoSonido > 700) {               // 700 ms de silencio
+         detenerGrabacionManual();                       // Envía último chunk y "MIC_STOP\n"
+     }
+===============================================================================

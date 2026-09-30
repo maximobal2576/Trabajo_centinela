@@ -1,0 +1,23 @@
+===============================================================================
+CONECTOR DE AUDIO: JACK TRRS 3.5mm CON DETECCIÓN MECÁNICA
+===============================================================================
+1. DESCRIPCIÓN:
+   Módulo conector hembra de 3.5 mm de 4 contactos (Tip, Ring 1, Ring 2, Sleeve)
+   compatible con auriculares estándar para telefonía móvil.
+
+2. ASIGNACIÓN DE PISTAS (ESTÁNDAR CTIA):
+   - Tip (Punta):          Audio Canal Izquierdo.
+   - Ring 1 (Anillo 1):    Audio Canal Derecho.
+   - Ring 2 (Anillo 2):    Masa (GND).
+   - Sleeve (Manga/Base):  Línea de Micrófono (MIC).
+
+3. PIN DE DETECCIÓN (JACK DETECT):
+   - Conexión al ESP32: GPIO 33.
+   - Modo de pin: INPUT_PULLUP (nivel lógico HIGH en reposo).
+   - Funcionamiento del contacto auxiliar:
+     * Sin ficha insertada: El interruptor mecánico interno permanece abierto (GPIO 33 = HIGH).
+     * Con ficha insertada: La punta del conector empuja la lámina y cierra el circuito a masa
+       (GPIO 33 = LOW = NIVEL_JACK_CONECTADO).
+   - Función en el software: Al leer LOW, el método Audio::auricularesConectados()
+     devuelve true, lo que apaga el amplificador del altavoz exterior mediante GPIO 32 (SD = LOW).
+===============================================================================

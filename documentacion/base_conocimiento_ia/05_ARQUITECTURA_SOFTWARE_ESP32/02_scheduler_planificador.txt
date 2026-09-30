@@ -1,0 +1,26 @@
+===============================================================================
+PLANIFICADOR COOPERATIVO DE TAREAS: SCHEDULER
+===============================================================================
+1. DISEÑO ARQUITECTÓNICO:
+   - Centinela v2.0 no utiliza delay() en ninguna parte de su código en tiempo de ejecución.
+   - El Scheduler es una clase estática que almacena las marcas de tiempo (unsigned long)
+     de la última ejecución de cada módulo: tiempoSensores, tiempoRadar, tiempoMovimiento, etc.
+
+2. FRECUENCIAS DE EJECUCIÓN:
+   - TIEMPO_EMERGENCIA = 50 ms  -> Chequeo del botón SOS.
+   - TIEMPO_MOVIMIENTO = 20 ms  -> Lectura del acelerómetro MPU-6050 (50 Hz).
+   - TIEMPO_DECISION   = 20 ms  -> Evaluación de prioridades y cálculo de PWM.
+   - TIEMPO_SALIDA     = 20 ms  -> Actualización de registros PWM de los motores.
+   - TIEMPO_AUDIO      = 20 ms  -> Bombeo de muestras hacia el DMA de audio I2S.
+   - TIEMPO_SENSORES   = 40 ms  -> Disparo y lectura de HC-SR04 frontal y de suelo.
+   - TIEMPO_RADAR      = 60 ms  -> Avance angular de 5° del servomotor y lectura.
+   - TIEMPO_BLUETOOTH  = 150 ms -> Envío de telemetría hacia CentinelaApp.
+   - TIEMPO_GPS        = 200 ms -> Lectura y parseo del búfer UART del NEO-6M.
+   - TIEMPO_BATERIA    = 4000 ms-> Muestreo del divisor analógico de batería.
+   - Micrófono: Microfono::actualizar() se invoca en cada paso del bucle sin restricción
+     temporal para muestrear continuamente a máxima tasa.
+
+3. VENTAJA OPERATIVA:
+   Permite al microcontrolador atender simultáneamente hasta 11 tareas distintas con
+   determinismo temporal y consumo predecible sin riesgo de bloqueo por operaciones lentas.
+===============================================================================

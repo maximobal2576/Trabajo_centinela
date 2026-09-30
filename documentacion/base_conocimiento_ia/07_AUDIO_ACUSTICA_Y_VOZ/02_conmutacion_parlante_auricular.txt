@@ -1,0 +1,28 @@
+===============================================================================
+LÓGICA DE CONMUTACIÓN AUTOMÁTICA: PARLANTE Y AURICULARES
+===============================================================================
+1. CONDICIÓN DE AURICULARES:
+   bool Audio::auricularesConectados() {
+       return (digitalRead(PIN_JACK_DETECT) == NIVEL_JACK_CONECTADO); // LOW = insertado
+   }
+
+2. CONTROL DEL PIN DE SHUTDOWN (I2S_SD_PIN = GPIO 32):
+   void Audio::habilitarAmplificador(bool on) {
+       // Protección de privacidad acústica:
+       // Si hay auriculares conectados, el amplificador exterior NUNCA se enciende.
+       if (on && Estado::sistema.auricularesConectados) {
+           digitalWrite(I2S_SD_PIN, LOW);
+           return;
+       }
+       digitalWrite(I2S_SD_PIN, on ? HIGH : LOW);
+   }
+
+3. COMPORTAMIENTO RESULTANTE:
+   - Si el usuario conecta auriculares con ficha Jack 3.5mm:
+     * El altavoz público se silencia instantáneamente.
+     * El audio se transmite directamente a sus oídos.
+   - Si no hay auriculares:
+     * El altavoz emite indicaciones para guiar al usuario en la vía pública.
+   - Si se detiene la reproducción:
+     * El amplificador se apaga para que no consuma energía ni genere siseos de fondo.
+===============================================================================

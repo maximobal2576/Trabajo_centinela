@@ -1,0 +1,22 @@
+===============================================================================
+BATERÍAS 18650 Y ESTIMACIÓN DE AUTONOMÍA
+===============================================================================
+1. ARQUITECTURA DE POTENCIA (2S1P):
+   - 2 celdas Li-Ion 18650 de 2600 mAh conectadas en serie con circuito BMS.
+   - Tensión nominal: 7.4 V.
+   - Energía total almacenada: 2.6 Ah * 7.4 V ≈ 19.24 Watts-hora (Wh).
+
+2. BALANCE DE CONSUMO DE CORRIENTE:
+   - ESP32 con Bluetooth Classic activo: ~160 mA @ 3.3V.
+   - 3 Sensores HC-SR04 disparando:       ~45 mA @ 5.0V.
+   - Módulo GPS NEO-6M con antena activa: ~45 mA @ 3.3V.
+   - Sensor MPU-6050:                     ~4 mA @ 3.3V.
+   - Servomotor SG90 en barrido continuo: ~150 mA promedio @ 5.0V.
+   - 3 Motores vibradores (uso al 50%):   ~150 mA promedio @ 5.0V.
+   - Audio I2S en reproducción media:     ~100 mA @ 5.0V.
+   - Corriente media equivalente a 7.4V:  ~350 mA a ~450 mA.
+
+3. AUTONOMÍA ESTIMADA:
+   - Tiempo de funcionamiento continuo: 2600 mAh / 450 mA ≈ 5.77 horas.
+   - Margen de seguridad del 10%: ~5.2 a 5.5 horas ininterrumpidas de autonomía.
+===============================================================================

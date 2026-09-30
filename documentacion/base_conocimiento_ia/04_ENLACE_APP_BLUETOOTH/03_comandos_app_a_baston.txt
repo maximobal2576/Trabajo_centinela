@@ -1,0 +1,22 @@
+===============================================================================
+COMANDOS RECIBIDOS DESDE LA APLICACIÓN (APP ➔ BASTÓN)
+===============================================================================
+1. RECEPCIÓN Y PARSEO:
+   El método Bluetooth::recibirDatos() evalúa el flujo de bytes de entrada.
+   Las cadenas de texto que terminan en '\n' o '\r' se envían a Bluetooth::_procesarComando().
+
+2. COMANDOS DISPONIBLES:
+
+   COMANDO ENVIADO        PARÁMETRO       ACCIÓN EN EL BASTÓN
+   ----------------------------------------------------------------------------
+   PING                   Sin parámetro   Verificación de conexión. El bastón responde "PONG\n".
+   TEST:<nivel>           nivel: 0 a 255  Prueba de actuadores hápticos. Fija los 3 motores
+                                          al nivel PWM indicado (ej. "TEST:200").
+   N:<0|1>                0 = Off, 1 = On Habilita o deshabilita la bandera de navegación
+                                          asistida (Estado::app.navegacionActiva).
+   G:<0|1>                0 = Off, 1 = On Informa si el GPS del celular está listo para
+                                          suplir la geolocalización (Estado::app.gpsDisponible).
+   B:                     Sin parámetro   Activación de baliza acústica de localización.
+   I:<texto>              texto: cadena   Instrucción peatonal (ej. "I:Girar a la izquierda").
+                                          Se imprime en el monitor serie y se enruta al audio.
+===============================================================================

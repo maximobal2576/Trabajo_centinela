@@ -1,0 +1,23 @@
+===============================================================================
+SISTEMA DE ALIMENTACIÓN: CELDAS 18650 Y REGULADOR STEP-DOWN
+===============================================================================
+1. BANCO DE ENERGÍA (BATERÍAS 18650 EN SERIE 2S):
+   - Tipo de celda: Iones de Litio (Li-Ion) estándar 18650.
+   - Configuración: 2 celdas conectadas en serie (2S1P).
+   - Tensión nominal: 7.4 V (3.7 V por celda).
+   - Tensión máxima de plena carga: 8.4 V (4.2 V por celda).
+   - Tensión de corte por descarga: ~6.0 V (3.0 V por celda).
+   - Capacidad típica: 2600 mAh a 3000 mAh.
+   - Circuito BMS: Placa de protección 2S contra sobrecarga, sobredescarga y cortocircuito.
+
+2. REGULADOR DE TENSIÓN CONMUTADO (STEP-DOWN DC-DC):
+   - Eficiencia energética: 88% a 92% (muy superior a reguladores lineales tipo 7805 o AMS1117).
+   - Riel de 5.0 V (hasta 3A): Alimenta los 3 sensores HC-SR04, el servomotor SG90,
+     los motores vibradores y la etapa de potencia del MAX98357A.
+   - Riel de 3.3 V (hasta 1A): Alimenta el ESP32, el módulo GPS NEO-6M y el MPU-6050.
+
+3. AUTONOMÍA Y CONSUMO ESTIMADO:
+   - Consumo medio en reposo/marcha normal: ~400 mA a ~500 mA.
+   - Consumo pico con radar girando y motores vibrando: ~950 mA.
+   - Autonomía efectiva promedio: entre 5 y 6 horas de uso continuo.
+===============================================================================

@@ -1,0 +1,31 @@
+===============================================================================
+CONVERSIÓN DE COORDENADAS NMEA A GRADOS DECIMALES
+===============================================================================
+1. DIFERENCIA DE FORMATOS:
+   - Formato NMEA: ddmm.mmmm (los dos primeros dígitos son grados, el resto son minutos).
+   - Formato estándar GIS / Google Maps: Grados decimales con signo (±dd.dddddd).
+
+2. ALGORITMO IMPLEMENTADO (GPS.CPP):
+   float GPS::_convertirCoordenada(const String& valor, char cuadrante) {
+       if (valor.length() < 4) return 0.0f;
+       int punto = valor.indexOf('.');
+       if (punto < 2) return 0.0f;
+       
+       int gradoLen = punto - 2;
+       float grados  = valor.substring(0, gradoLen).toFloat();
+       float minutos = valor.substring(gradoLen).toFloat();
+       float decimal = grados + (minutos / 60.0f);
+       
+       if (cuadrante == 'S' || cuadrante == 'W') {
+           decimal = -decimal;
+       }
+       return decimal;
+   }
+
+3. EJEMPLO PRÁCTICO:
+   - Entrada: "3436.1234", 'S'
+     grados = 34
+     minutos = 36.1234
+     decimal = 34 + (36.1234 / 60.0) = 34 + 0.602056 = 34.602056
+     cuadrante 'S' -> Resultado: -34.602056°.
+===============================================================================

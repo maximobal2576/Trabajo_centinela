@@ -1,0 +1,31 @@
+===============================================================================
+CIRCUITO DE CONMUTACIÓN MOSFET PARA MOTORES VIBRADORES
+===============================================================================
+1. DIAGRAMA ESQUEMÁTICO:
+
+   +5V (Riel de Potencia)
+     │
+     ├───(+) [ Motor Vibrador DC ] (─)
+     │            │
+     │            ├───[ Diodo Flyback 1N4148 ] (Cátodo a +5V, Ánodo a D)
+     │            │
+     │            ├─── D (Drain / Drenador)
+     │                 │
+GPIO PWM (ESP32) ─── Gate (G)   [ MOSFET Canal N Nivel Lógico ]
+  (3.3V, 5kHz)         │
+     │                 └─── S (Source / Fuente)
+   [10kΩ]                   │
+     │                     GND
+    GND
+
+2. DETALLE DE COMPONENTES:
+   - Transistor MOSFET Canal N:
+     * Disparo en compuerta (Gate): 3.3V provenientes directamente del pin GPIO del ESP32.
+     * Conecta el borne negativo del motor a masa cuando el PWM está en nivel alto.
+   - Resistencia Pull-Down de 10 kΩ:
+     * Mantiene Gate en 0V durante el encendido o reinicio del ESP32, evitando
+       que los motores vibren de forma errática antes de que el firmware tome control.
+   - Diodo Flyback 1N4148:
+     * Absorbe la fuerza contraelectromotriz (f.c.e.m.) generada por la bobina del motor
+       al interrumpirse la corriente, protegiendo la juntura del MOSFET.
+===============================================================================

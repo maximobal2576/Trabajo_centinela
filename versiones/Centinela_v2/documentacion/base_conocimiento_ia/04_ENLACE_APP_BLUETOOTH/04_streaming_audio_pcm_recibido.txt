@@ -1,0 +1,28 @@
+===============================================================================
+STREAMING DE AUDIO BINARIO RECIBIDO POR BLUETOOTH (APP ➔ BASTÓN)
+===============================================================================
+1. PROPÓSITO:
+   Permitir que la síntesis de voz (Text-To-Speech) o los tonos generados por
+   la aplicación CentinelaApp se reproduzcan en tiempo real por el altavoz o
+   auriculares del bastón a través del DAC I2S MAX98357A.
+
+2. ESTRUCTURA DE LA TRAMA BINARIA:
+   
+   BYTE 0: 0xA5 (BT_AUDIO_MAGIC_1 - Primer byte de sincronismo mágico).
+   BYTE 1: 0x5A (BT_AUDIO_MAGIC_2 - Segundo byte de sincronismo mágico).
+   BYTE 2: Longitud_Baja (Little-Endian: chunkLen & 0xFF).
+   BYTE 3: Longitud_Alta (Little-Endian: (chunkLen >> 8) & 0xFF).
+   BYTES 4 a 4+chunkLen-1: Muestras de audio PCM con signo (16 bits, 16.000 Hz, mono).
+
+3. BUFFER CIRCULAR EN EL ESP32:
+   - Capacidad: AUDIO_BUF_SIZE = 2048 bytes.
+   - Punteros: audioHead (donde escribe Bluetooth) y audioTail (donde lee Audio).
+   - Métodos:
+     * Bluetooth::audioBytesDisponibles() -> Retorna cantidad de muestras encoladas.
+     * Bluetooth::audioLeer()            -> Extrae un byte y avanza la cola circular.
+
+4. TEMPORIZADOR DE TIMEOUT DE STREAMING:
+   - Si no se reciben nuevos fragmentos de audio durante más de 400 ms
+     (AUDIO_STREAM_TIMEOUT_MS), el firmware marca Estado::sistema.audioStreamActivo = false
+     y el amplificador se apaga para suprimir ruidos de fondo y ahorrar batería.
+===============================================================================

@@ -1,0 +1,22 @@
+===============================================================================
+CONFIGURACIÓN DE PUERTO SERIE PARA GPS NEO-6M (GPS.CPP)
+===============================================================================
+1. PUERTO HARDWARE SERIAL2:
+   - El ESP32 posee 3 controladores UART por hardware independientes.
+   - Serial0 (Pines 1 y 3) está dedicado a la programación y depuración por USB.
+   - Serial2 se asigna al GPS en los pines GPIO 16 (RX) y GPIO 17 (TX).
+
+2. INICIALIZACIÓN:
+   void GPS::iniciar() {
+       Serial2.begin(GPS_BAUDRATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+       // GPS_BAUDRATE = 9600
+       // GPS_RX_PIN   = 16
+       // GPS_TX_PIN   = 17
+       _nmeaBuffer.reserve(128);
+   }
+
+3. LECTURA ASÍNCRONA:
+   - En cada llamado de GPS::actualizar() (cada 200 ms), se vacía el buffer FIFO
+     de Serial2 carácter por carácter acumulando las sentencias hasta detectar '\n'.
+   - Las cadenas completas se envían a GPS::_procesarSentencia().
+===============================================================================
