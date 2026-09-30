@@ -181,8 +181,15 @@ class BluetoothService:
                 return False
 
             if not adapter.isEnabled():
-                self.last_error = "Activa el Bluetooth del celular."
-                return False
+                self.last_error = "Activando Bluetooth automáticamente..."
+                try:
+                    adapter.enable()
+                    time.sleep(1.8)
+                except Exception:
+                    pass
+                if not adapter.isEnabled():
+                    self.last_error = "Activa el Bluetooth del celular."
+                    return False
 
             # 1. Buscar en dispositivos ya vinculados
             device = self._find_paired_esp32(adapter)

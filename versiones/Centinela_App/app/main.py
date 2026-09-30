@@ -93,9 +93,22 @@ class CentinelaApp(MDApp):
             bateria_valor = self.bluetooth_service.state.get("BATERIA", "--")
             self.top_bar.actualizar_bateria(conectado, bateria_valor)
 
+            # Avisos por voz para el usuario invidente al cambiar conexión
+            prev_conectado = getattr(self, "_prev_conectado", None)
+            if prev_conectado is not None and conectado != prev_conectado:
+                from services.voz import VozService
+                if conectado:
+                    bat_txt = f" con {bateria_valor} por ciento de batería" if str(bateria_valor).isdigit() else ""
+                    VozService.hablar(f"Bastón Centinela conectado{bat_txt}.")
+                else:
+                    VozService.hablar("Bastón desconectado. Intentando reconectar automáticamente.")
+            self._prev_conectado = conectado
+
             # Monitoreo de eventos críticos del bastón (Caída o Pulsador SOS)
             evento = str(self.bluetooth_service.state.get("EVENTO", "")).strip().upper()
             if evento in ("CAIDA", "EMERGENCIA", "SOS") and self.sm.current != "emergencia":
+                from services.voz import VozService
+                VozService.hablar("¡Atención! Alerta de emergencia detectada.")
                 self.switch_screen("emergencia")
         except Exception:
             pass
@@ -228,10 +241,14 @@ class CentinelaApp(MDApp):
             pass
 
     def on_start(self):
-        """El botón Atrás cierra el menú si está abierto, o vuelve al inicio."""
+        """Inicialización completa y automática de la app para el usuario invidente."""
         Window.bind(on_keyboard=self._on_keyboard)
-        # Iniciar auto-conexión Bluetooth con el bastón Centinela v2 en background
-        Clock.schedule_once(self._iniciar_auto_conexion_bt, 0.6)
+        # 1. Iniciar auto-conexión Bluetooth con el bastón en background
+        Clock.schedule_once(self._iniciar_auto_conexion_bt, 0.4)
+        # 2. Iniciar servicio GPS global en background inmediatamente
+        Clock.schedule_once(self._iniciar_gps_global, 0.8)
+        # 3. Anuncio auditivo de bienvenida en español
+        Clock.schedule_once(self._anunciar_inicio_app, 1.2)
 
     def _iniciar_auto_conexion_bt(self, _dt=None):
         """Lanza el hilo de auto-conexión SPP con el ESP32."""
@@ -240,6 +257,23 @@ class CentinelaApp(MDApp):
                 self.bluetooth_service.conectar_automaticamente()
         except Exception as e:
             print(f"[CentinelaApp] Error en auto-conexión BT: {e}")
+
+    def _iniciar_gps_global(self, _dt=None):
+        """Inicia el servicio de geolocalización satelital de forma anticipada."""
+        try:
+            from services.gps import get_ubicacion_service
+            gps = get_ubicacion_service()
+            gps.iniciar()
+        except Exception as e:
+            print(f"[CentinelaApp] Error al iniciar GPS global: {e}")
+
+    def _anunciar_inicio_app(self, _dt=None):
+        """Le habla al usuario ciego al abrir la aplicación para tranquilidad inmediata."""
+        try:
+            from services.voz import VozService
+            VozService.hablar("Centinela iniciado. Buscando bastón y activando ubicación satelital.")
+        except Exception as e:
+            print(f"[CentinelaApp] Error en anuncio inicial de voz: {e}")
 
     def on_pause(self):
         """Mantiene los servicios de GPS, Bluetooth y notificaciones activos al suspender la pantalla."""

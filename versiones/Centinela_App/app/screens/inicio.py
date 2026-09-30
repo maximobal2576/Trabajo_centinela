@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 screens/inicio.py - Pantalla Principal y de Bienvenida de Centinela.
 
@@ -92,7 +92,7 @@ class InicioScreen(MDBoxLayout):
         self.boton_conectar = MDRaisedButton(
             text="CONECTAR BASTÓN",
             pos_hint={"center_x": 0.5},
-            size_hint=(0.70, None),
+            size_hint=(0.85, None),
             height=dp(52),
             md_bg_color=BORDO_OSCURO,
             theme_text_color="Custom",
@@ -101,11 +101,35 @@ class InicioScreen(MDBoxLayout):
         )
         self.add_widget(self.boton_conectar)
 
+        # =====================================================================
+        # 5. BOTÓN PROTAGÓNICO SOS DE EMERGENCIA DIRECTO
+        # =====================================================================
+        self.boton_sos = MDRaisedButton(
+            text="🆘 EMERGENCIA SOS",
+            pos_hint={"center_x": 0.5},
+            size_hint=(0.85, None),
+            height=dp(56),
+            md_bg_color=ROJO_EMERGENCIA,
+            theme_text_color="Custom",
+            text_color=CREMA_CLARO,
+            on_release=self._activar_emergencia_directa,
+        )
+        self.add_widget(self.boton_sos)
+
         # Refresco continuo a 2 Hz (0.5 s)
         Clock.schedule_interval(self.actualizar_estado, 0.5)
 
         # Lanzar la auto-conexión Bluetooth en background al iniciar la app
         Clock.schedule_once(self._iniciar_auto_conexion, 0.5)
+
+    def _activar_emergencia_directa(self, _instance=None):
+        """Permite al usuario ciego disparar auxilio inmediato desde la pantalla principal."""
+        from services.voz import VozService
+        VozService.hablar("Activando auxilio de emergencia.")
+        from kivymd.app import MDApp
+        app = MDApp.get_running_app()
+        if app and hasattr(app, "switch_screen"):
+            app.switch_screen("emergencia")
 
     def _iniciar_auto_conexion(self, _dt):
         """Lanza el hilo de búsqueda automática del bastón ESP32 en segundo plano."""
@@ -116,7 +140,7 @@ class InicioScreen(MDBoxLayout):
         if self.bluetooth_service.connected:
             self.estado_baston.text = "BASTÓN CONECTADO"
             self.estado_baston.text_color = VERDE_ESTADO
-            self.boton_conectar.text = "DESCONECTAR"
+            self.boton_conectar.text = "DESCONECTAR BASTÓN"
             self.boton_conectar.md_bg_color = BORDO_OSCURO
 
             # Nivel de batería Li-Ion recibido por telemetría
@@ -150,11 +174,14 @@ class InicioScreen(MDBoxLayout):
 
     def alternar_conexion(self, _instance=None):
         """Permite al usuario forzar la conexión o desconexión manual del bastón."""
+        from services.voz import VozService
         if self.bluetooth_service.connected:
+            VozService.hablar("Desconectando el bastón.")
             self.bluetooth_service.detener_auto()
             self.bluetooth_service.disconnect()
             self.actualizar_estado(None)
         else:
+            VozService.hablar("Buscando y conectando al bastón.")
             self.estado_baston.text = "Conectando al bastón..."
             self.estado_baston.text_color = DORADO_APAGADO
             self.bluetooth_service.detener_auto()
