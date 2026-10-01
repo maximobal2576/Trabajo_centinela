@@ -9,7 +9,7 @@ Innovaciones de Ingeniería Integrada:
     - Empuñadura anatómica integrada (sin cajas externas acopladas).
     - Cavidad axial protegida para 2x Baterías 18650 en serie + BMS 2S.
     - Bahía central para ESP32-WROOM y módulo IMU MPU-6050 con montaje flotante.
-    - 3 Nichos hápticos para motores de vibración (dedo índice, pulgar y palma).
+    - 4 Nichos hápticos para motores de vibración (frontal, pulgar izquierdo, dedos derecho y palma).
     - Cavidad integrada para Pulsador SOS y puerto de recarga.
  2. Torreta Monolítica de Sensores Ultrasónicos:
     - Sensor Frontal integrado (2 orificios de 16.2 mm a 26 mm de centro).
@@ -112,11 +112,22 @@ caja_esp32 = Part.makeBox(28.0, 14.0, 55.0)
 caja_esp32.translate(App.Vector(-14.0, -7.0, L_MANGO - L_BAT_BAY - 70.0))
 mango_solido = mango_solido.cut(caja_esp32)
 
-# 3. Nichos para 3 Motores Hápticos de Vibración (Palma, Índice, Pulgar)
-for z_pos, ang_deg in [(L_MANGO - 25.0, 0), (L_MANGO - 50.0, 120), (L_MANGO - 80.0, 240)]:
+# 3. Nichos para 4 Motores Hápticos de Vibración (Frontal/Índice, Izquierdo/Pulgar, Derecho/Dedos, Posterior/Palma)
+# Posiciones ergonómicas anatómicas para discriminación táctil sin diafonía (cross-talk):
+# Motor 1: Frontal superior (0 deg, Z = L_MANGO - 25.0) -> Detección frontal / torso
+# Motor 2: Lateral izquierdo (90 deg, Z = L_MANGO - 55.0) -> Sector izquierdo / pulgar
+# Motor 3: Lateral derecho (270 deg, Z = L_MANGO - 55.0) -> Sector derecho / dedos
+# Motor 4: Posterior dorsal (180 deg, Z = L_MANGO - 90.0) -> Sector suelo / desniveles / palma
+for z_pos, ang_deg in [
+    (L_MANGO - 25.0, 0),    # Frontal / Índice
+    (L_MANGO - 55.0, 90),   # Izquierdo / Pulgar
+    (L_MANGO - 55.0, 270),  # Derecho / Yemas dedos
+    (L_MANGO - 90.0, 180)   # Posterior / Palma
+]:
     nicho_motor = Part.makeCylinder(D_HAPTIC_MOTOR / 2.0, 6.0)
     nicho_motor.rotate(App.Vector(0,0,0), App.Vector(0,1,0), 90)
-    nicho_motor.translate(App.Vector(r1_top - 4.5, 0, z_pos))
+    r_local = r1_bot + (r1_top - r1_bot) * (z_pos / L_MANGO)
+    nicho_motor.translate(App.Vector(r_local - 4.5, 0, z_pos))
     nicho_motor.rotate(App.Vector(0,0,0), App.Vector(0,0,1), ang_deg)
     mango_solido = mango_solido.cut(nicho_motor)
 
