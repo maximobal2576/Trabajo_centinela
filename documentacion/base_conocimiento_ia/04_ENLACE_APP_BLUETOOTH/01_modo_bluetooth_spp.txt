@@ -1,19 +1,19 @@
 ===============================================================================
-ENLACE INALÁMBRICO: BLUETOOTH SPP (SERIAL PORT PROFILE)
+ENLACE INALÁMBRICO: BLUETOOTH SPP (SERIAL PORT PROFILE) — CENTINELA v2.0
 ===============================================================================
 1. PROTOCOLO Y CONFIGURACIÓN:
    - Tipo de Bluetooth: Bluetooth Classic v4.2 BR/EDR.
    - Perfil de comunicación: Serial Port Profile (SPP), que emula un puerto serie
-     transparente bidireccional entre el ESP32 y el teléfono móvil Android.
-   - Clase de Arduino: BluetoothSerial (nativa del core ESP32).
-   - Nombre público de difusión: "Centinela-Baston".
-   - Código PIN de emparejamiento seguro: "1234".
+     transparente bidireccional entre el ESP32 y el teléfono móvil.
+   - Clase de Arduino: BluetoothSerial (nativa del framework arduino-esp32).
+   - Nombre público de difusión: "Centinela-Baston" (BT_NOMBRE_DISPOSITIVO).
+   - Código PIN de emparejamiento seguro: "1234" (BT_PIN_PAREO).
 
-2. INICIALIZACIÓN EN EL FIRMWARE:
+2. INICIALIZACIÓN EN EL FIRMWARE (BLUETOOTH.CPP):
    void Bluetooth::iniciar() {
-       bt.setPin("1234");
-       bt.begin("Centinela-Baston");
-       Estado::sistema.bluetoothConectado = false;
+       bt.setPin(BT_PIN_PAREO);
+       bt.begin(BT_NOMBRE_DISPOSITIVO);
+       Estado::setBluetoothConectado(false);
    }
 
 3. NATURALEZA DUAL DEL CANAL:
@@ -21,4 +21,12 @@ ENLACE INALÁMBRICO: BLUETOOTH SPP (SERIAL PORT PROFILE)
    - Tráfico de texto ASCII delimitado por salto de línea (\n): telemetría y comandos.
    - Tráfico binario en tiempo real: tramas de audio PCM identificadas por la
      cabecera mágica de sincronización (0xA5 0x5A).
+
+4. COMPATIBILIDAD CON DOS ECOSISTEMAS DE APLICACIÓN:
+   - Aplicación Móvil Android Nativa (Centinela_App v2.0):
+     Conexión desatendida 100% automática por hilo en segundo plano (daemon),
+     gestión de GPS continuo y Text-to-Speech nativo en español.
+   - Web Companion App (presentacion/):
+     Interfaz web accesible WCAG 2.1 AAA para seguimiento y demostración,
+     con Web Speech API y controles táctiles sobredimensionados.
 ===============================================================================

@@ -1,31 +1,39 @@
 ===============================================================================
-BOTÓN FÍSICO DE EMERGENCIA (SOS) Y FILTRADO ANTIRREBOTE
+BOTÓN FÍSICO DE EMERGENCIA (SOS) Y FILTRADO ANTIRREBOTE — CENTINELA v2.0
 ===============================================================================
 1. PROPÓSITO:
    Permitir al usuario solicitar auxilio inmediato ante situaciones de peligro,
-   desorientación o agresión con solo presionar un botón táctil en el mango.
+   desorientación, agresión o caída con solo presionar un botón táctil ergonómico
+   ubicado estratégicamente en la empuñadura del bastón.
 
-2. CONEXIÓN ELÉCTRICA:
+2. CONEXIÓN ELÉCTRICA DEFINITIVA:
    - Pin ESP32: GPIO 15.
-   - Modo de pin: INPUT_PULLUP (la resistencia interna mantiene la línea en 3.3V).
+   - Modo de pin: INPUT_PULLUP (resistencia interna pull-up que fija 3.3V en reposo).
    - Pulsador: Conectado entre GPIO 15 y GND (Masa).
-   - Lógica: Presionado = LOW (0V) | Reposo = HIGH (3.3V).
+   - Lógica física: Presionado = LOW (0V) | En reposo = HIGH (3.3V).
 
 3. FILTRO ANTIRREBOTE POR SOFTWARE (DEBOUNCE):
    - Constante: SOS_DEBOUNCE_MS = 50 milisegundos.
-   - Algoritmo:
-     * Si la lectura digital cambia respecto al último estado físico conocido,
-       se guarda la marca de tiempo (millis()).
-     * Solo si el nuevo estado persiste de forma ininterrumpida durante más
-       de 50 ms se confirma el cambio como una pulsación real y deliberada.
-     * Esto elimina falsas activaciones generadas por rebotes mecánicos o vibración.
+   - Algoritmo en Emergencia.cpp:
+     * Si la lectura digital cambia respecto al último estado estable, se guarda la
+       marca temporal millis().
+     * Solo si el nivel LOW persiste de manera ininterrumpida por más de 50 ms se
+       valida el evento como una pulsación real y deliberada.
+     * Esto filtra el 100% de ruidos por rebotes mecánicos o vibraciones de motores.
 
 4. ACCIONES ANTE CONFIRMACIÓN DE SOS:
-   - Estado: SISTEMA_EMERGENCIA con PRIORIDAD_CRITICA (3).
-   - Motores: Patrón rítmico intermitente de alerta a máxima potencia (PWM 255).
-   - Bluetooth: Envía de inmediato los comandos ASCII:
+   - Estado del Sistema: NivelAlerta::EMERGENCIA (Prioridad Crítica Máxima).
+   - Motores Hápticos: Los 3 canales vibran intermitentemente a máxima potencia (PWM 255).
+   - Alarma Sonora Local Autónoma:
+     El bastón emite por su propio altavoz de 3.2W una sirena acústica de 1200 Hz
+     (Audio::reproducirAlarma()) para alertar a los transeúntes cercanos en la calle,
+     incluso si el teléfono celular está apagado o desvinculado.
+   - Telemetría Bluetooth:
+     Despacha de inmediato tramas de alta prioridad:
      "EVENTO:EMERGENCIA"
      "SOS:1"
-   - La aplicación CentinelaApp recibe la alerta y dispara el protocolo de emergencia
-     con las coordenadas satelitales obtenidas por el GPS.
+     "GPS:<lat>,<lon>,<fix>" (con retención de últimas coordenadas válidas si se perdió fix).
+   - Aplicación Móvil Android (Centinela_App v2.0):
+     Dispara alerta de voz TTS en español, notificación sonora en el teléfono, mensaje
+     SMS de auxilio con geolocalización directa a Google Maps e inicio de llamada de socorro.
 ===============================================================================

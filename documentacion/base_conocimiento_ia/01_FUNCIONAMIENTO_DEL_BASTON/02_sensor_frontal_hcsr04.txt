@@ -1,19 +1,22 @@
 ===============================================================================
-SENSOR ULTRASÓNICO FRONTAL (HC-SR04)
+SENSOR ULTRASÓNICO FRONTAL (HC-SR04) — CENTINELA v2.0
 ===============================================================================
 1. PROPÓSITO:
    Detectar obstáculos directos ubicados en la trayectoria frontal del usuario
    a la altura del torso y la cabeza (postes, paredes, transeúntes, carteles).
 
-2. PINES DE CONEXIÓN:
-   - TRIGGER: GPIO 23 (Salida digital del ESP32).
-   - ECHO:    GPIO 35 (Entrada del ESP32, a través de divisor resistivo 1kΩ/2kΩ).
+2. PINES DE CONEXIÓN DEFINITIVOS:
+   - TRIGGER: GPIO 23 (Salida digital del ESP32, pulso de 10 µs).
+   - ECHO:    GPIO 34 (Entrada pura del ESP32 / SENSOR_VP, con divisor resistivo
+              1 kΩ / 2 kΩ para adaptar el nivel lógico de 5V a 3.3V).
 
 3. MÉTODO DE MEDICIÓN:
    - Se envía un pulso LOW de 2µs, seguido de un pulso HIGH de 10µs en el pin TRIGGER.
-   - Se mide el tiempo de duración en alto del pin ECHO con pulseIn() con timeout de 15000 µs (~2.5 metros máx).
+   - Se mide el tiempo de duración en alto del pin ECHO con pulseIn() con timeout
+     de 15000 µs (~2.5 metros máx).
    - Fórmula: Distancia (cm) = (duración_us * 0.0343) / 2.0.
-   - Si no hay eco (duración == 0) o la distancia está fuera del rango [2, 400], se fija en 400 cm (despejado).
+   - Si no hay eco (duración == 0) o la distancia está fuera del rango [2, 400],
+     se fija en 400 cm (camino despejado).
 
 4. RANGOS Y UMBRALES:
    - DISTANCIA_ALERTA_MAX = 80 cm. Si distancia <= 80 cm, se activa alerta.
@@ -22,5 +25,6 @@ SENSOR ULTRASÓNICO FRONTAL (HC-SR04)
 5. RESPUESTA DEL SISTEMA:
    - Activa el motor de vibración CENTRAL con intensidad proporcional calculada
      mediante map(distancia, 80, 20, PWM_SUAVE, PWM_MAXIMO).
-   - Genera el evento EVENTO_OBSTACULO_FRONTAL y dirección DIRECCION_FRONTAL.
+   - Genera el evento en Estado::setNivelAlerta() y fija Zona::CENTRO.
+   - Telemetría: Transmite "FRONTAL:<distancia>" a la app vía Bluetooth.
 ===============================================================================

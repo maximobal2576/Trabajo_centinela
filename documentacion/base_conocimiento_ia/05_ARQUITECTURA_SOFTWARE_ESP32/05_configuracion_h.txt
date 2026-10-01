@@ -1,23 +1,46 @@
 ===============================================================================
-ARCHIVO DE CONFIGURACIÓN CENTRAL: CONFIGURACION.H
+ARCHIVO DE CONFIGURACIÓN CENTRAL: CONFIGURACION.H — CENTINELA v2.0
 ===============================================================================
 1. PROPÓSITO:
-   Centralizar todas las definiciones de hardware (pines GPIO), parámetros
-   acústicos, frecuencias de muestreo, umbrales cinemáticos y temporizadores
-   del Scheduler en un único encabezado para facilitar el mantenimiento.
+   Centralizar todas las definiciones de hardware (pines GPIO), frecuencias PWM,
+   tiempos de Scheduler, umbrales de alerta y parámetros de comunicación en un
+   único encabezado Doxygen para facilitar el mantenimiento y portabilidad.
 
-2. CONSTANTES CLAVE DEFINIDAS:
-   - IMU MPU-6050:  MPU_SDA (21), MPU_SCL (22), MPU_UMBRAL_CAIDA_LIBRE (0.45f), MPU_UMBRAL_GOLPE (1.75f).
-   - GPS NEO-6M:    GPS_RX_PIN (16), GPS_TX_PIN (17), GPS_BAUDRATE (9600).
-   - Audio I2S:     I2S_BCK_PIN (26), I2S_WS_PIN (25), I2S_DATA_PIN (27), I2S_SD_PIN (32),
-                    PIN_JACK_DETECT (33), AUDIO_SAMPLE_RATE (16000), AUDIO_BUF_SIZE (2048).
-   - Motores PWM:   MOTOR_IZQUIERDO (4), MOTOR_CENTRO (5), MOTOR_DERECHO (18),
-                    PWM_SUAVE (80), PWM_MEDIO (150), PWM_FUERTE (210), PWM_MAXIMO (255), PWM_POZO (130).
-   - Servo Radar:   PIN_SERVO (13), RADAR_IZQUIERDA (45), RADAR_CENTRO (90), RADAR_DERECHA (135), RADAR_PASO (5).
-   - Ultrasonidos:  TRIG_FRONTAL (23), ECHO_FRONTAL (35), TRIG_SUELO (19), ECHO_SUELO (36),
-                    TRIG_RADAR (2), ECHO_RADAR (39), DISTANCIA_ALERTA_MAX (80), DISTANCIA_PELIGRO (20).
-   - Micrófono:     PIN_MICROFONO_ANALOGICO (39), MIC_UMBRAL_VOZ (200), MIC_SILENCIO_TIMEOUT_MS (700).
-   - Botón SOS:     PIN_BOTON_SOS (15), SOS_DEBOUNCE_MS (50).
-   - Batería:       PIN_BATERIA (34), BATERIA_UMBRAL_BAJA (15), BATERIA_UMBRAL_RECUPERACION (18).
-   - Bluetooth:     BT_NOMBRE_DISPOSITIVO ("Centinela-Baston"), BT_PIN_PAREO ("1234").
+2. CONSTANTES CLAVE DEFINIDAS (VALORES DEFINITIVOS v2.0):
+   - IMU MPU-6050:
+     * MPU_SDA (21), MPU_SCL (22)
+     * MPU_UMBRAL_CAIDA_LIBRE (0.45f), MPU_UMBRAL_GOLPE (1.75f), CAIDA_VENTANA_MS (800)
+   - GPS NEO-6M:
+     * GPS_RX_PIN (16), GPS_TX_PIN (17), GPS_BAUDRATE (9600)
+   - Audio Digital I2S y Conector TRRS:
+     * I2S_BCK_PIN (26), I2S_WS_PIN (25), I2S_DATA_PIN (27), I2S_SD_PIN (32)
+     * PIN_JACK_DETECT (14, INPUT_PULLUP)
+     * AUDIO_SAMPLE_RATE (16000), AUDIO_BUF_SIZE (2048)
+   - Motores Hápticos PWM (LEDC):
+     * MOTOR_IZQUIERDO (4), MOTOR_CENTRO (5), MOTOR_DERECHO (18)
+     * LEDC_CH_IZQ (0), LEDC_CH_CTR (1), LEDC_CH_DER (2), LEDC_FREQ_HZ (5000), LEDC_BITS (8)
+     * PWM_SUAVE (80), PWM_MEDIO (150), PWM_FUERTE (210), PWM_MAXIMO (255), PWM_POZO (130)
+   - Servomotor y Radar Móvil:
+     * PIN_SERVO (13), RADAR_IZQUIERDA (45), RADAR_CENTRO (90), RADAR_DERECHA (135), RADAR_PASO (5)
+   - Sensores Ultrasónicos HC-SR04:
+     * TRIG_FRONTAL (23), ECHO_FRONTAL (34, INPUT-ONLY)
+     * TRIG_SUELO (19), ECHO_SUELO (35, INPUT-ONLY)
+     * TRIG_RADAR (2), ECHO_RADAR (36, INPUT-ONLY)
+     * DISTANCIA_ALERTA_MAX (80 cm), DISTANCIA_PELIGRO (20 cm)
+   - Micrófono Analógico de Voz:
+     * PIN_MICROFONO (39, ADC1_CH3 exclusivo, INPUT-ONLY)
+     * MIC_UMBRAL_VOZ (200), MIC_SILENCIO_TIMEOUT_MS (700)
+   - Botón SOS / Pánico:
+     * PIN_BOTON_SOS (15, INPUT_PULLUP), SOS_DEBOUNCE_MS (50)
+   - Batería y Energía:
+     * PIN_BATERIA (33, ADC1_CH5 compatible con Bluetooth activo)
+     * BATERIA_MUESTRAS (8), BATERIA_UMBRAL_BAJA (15%), BATERIA_UMBRAL_RECUPERACION (18%)
+     * ADC_LECTURA_VACIA (1910 ~6.0V), ADC_LECTURA_LLENA (2670 ~8.4V)
+   - Bluetooth SPP:
+     * BT_NOMBRE_DISPOSITIVO ("Centinela-Baston"), BT_PIN_PAREO ("1234")
+   - Planificador Cooperativo (Scheduler):
+     * TIEMPO_EMERGENCIA (50 ms), TIEMPO_MOVIMIENTO (20 ms), TIEMPO_SENSORES (40 ms)
+     * TIEMPO_RADAR (60 ms), TIEMPO_GPS (200 ms), TIEMPO_BATERIA (5000 ms)
+     * TIEMPO_DECISION (30 ms), TIEMPO_SALIDA (30 ms), TIEMPO_BLUETOOTH (150 ms)
+     * TIEMPO_DIAGNOSTICO (1000 ms)
 ===============================================================================

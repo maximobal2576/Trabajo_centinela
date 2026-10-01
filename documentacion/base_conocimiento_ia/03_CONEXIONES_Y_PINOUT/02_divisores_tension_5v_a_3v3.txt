@@ -2,11 +2,11 @@
 DIVISORES DE TENSIÓN: PROTECCIÓN DE ENTRADAS DIGITALES (5V A 3.3V)
 ===============================================================================
 1. PROBLEMA ELÉCTRICO:
-   - Los sensores ultrasónicos HC-SR04 se alimentan con 5.0V y sus salidas ECHO
-     generan pulsos lógicos a 5.0V.
-   - El microcontrolador ESP32 opera a 3.3V. Aplicar 5.0V de forma continua en sus
-     pines GPIO puede degradar o quemar permanentemente los diodos de protección
-     y la lógica interna del chip.
+   - Los tres sensores ultrasónicos HC-SR04 se alimentan con 5.0V y sus salidas ECHO
+     generan pulsos lógicos a nivel de 5.0V.
+   - El microcontrolador ESP32 opera a 3.3V y sus entradas no son tolerantes a 5V.
+     Aplicar 5.0V de forma continua puede degradar o quemar permanentemente los
+     diodos internos de protección y el silicio del chip.
 
 2. ESQUEMA DEL DIVISOR RESISTIVO (1 kΩ / 2 kΩ):
    
@@ -21,8 +21,8 @@ DIVISORES DE TENSIÓN: PROTECCIÓN DE ENTRADAS DIGITALES (5V A 3.3V)
    Vout = 5.0V * ( 2000Ω / (1000Ω + 2000Ω) )
    Vout = 5.0V * ( 2 / 3 ) = 3.333 V.
 
-4. APLICACIÓN EN CENTINELA v2.0:
-   - ECHO Frontal:  Pin 35 del HC-SR04 -> Divisor 1k/2k -> GPIO 35 del ESP32.
-   - ECHO Suelo:    Pin 35 del HC-SR04 -> Divisor 1k/2k -> GPIO 36 del ESP32.
-   - ECHO Radar:    Pin 35 del HC-SR04 -> Divisor 1k/2k -> GPIO 39 del ESP32.
+4. APLICACIÓN EN CENTINELA v2.0 DEFINITIVO:
+   - ECHO Frontal: Pin ECHO del HC-SR04 Frontal -> Divisor 1k/2k -> GPIO 34 del ESP32.
+   - ECHO Suelo:   Pin ECHO del HC-SR04 Suelo   -> Divisor 1k/2k -> GPIO 35 del ESP32.
+   - ECHO Radar:   Pin ECHO del HC-SR04 Radar   -> Divisor 1k/2k -> GPIO 36 del ESP32.
 ===============================================================================

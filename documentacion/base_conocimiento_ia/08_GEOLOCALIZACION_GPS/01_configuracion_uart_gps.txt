@@ -1,22 +1,31 @@
 ===============================================================================
-CONFIGURACIÓN DE PUERTO SERIE PARA GPS NEO-6M (GPS.CPP)
+CONFIGURACIÓN DE PUERTO SERIE PARA GPS NEO-6M (GPS.CPP) — CENTINELA v2.0
 ===============================================================================
 1. PUERTO HARDWARE SERIAL2:
-   - El ESP32 posee 3 controladores UART por hardware independientes.
-   - Serial0 (Pines 1 y 3) está dedicado a la programación y depuración por USB.
-   - Serial2 se asigna al GPS en los pines GPIO 16 (RX) y GPIO 17 (TX).
+   - El microcontrolador ESP32 posee 3 controladores UART por hardware independientes.
+   - Serial0 (Pines 1 y 3) está asignado a la consola de programación y diagnóstico USB.
+   - Serial2 se asigna exclusivamente al receptor GPS NEO-6M:
+     * GPIO 16 (GPS_RX_PIN): Conectado a la línea TX del módulo GPS.
+     * GPIO 17 (GPS_TX_PIN): Conectado a la línea RX del módulo GPS (opcional).
+   - Velocidad de baudios: 9600 baudios (8N1).
 
-2. INICIALIZACIÓN:
+2. INICIALIZACIÓN EN GPS.CPP:
    void GPS::iniciar() {
        Serial2.begin(GPS_BAUDRATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-       // GPS_BAUDRATE = 9600
-       // GPS_RX_PIN   = 16
-       // GPS_TX_PIN   = 17
        _nmeaBuffer.reserve(128);
+       _latitud        = 0.0f;
+       _longitud       = 0.0f;
+       _gpsFix         = false;
    }
 
-3. LECTURA ASÍNCRONA:
-   - En cada llamado de GPS::actualizar() (cada 200 ms), se vacía el buffer FIFO
-     de Serial2 carácter por carácter acumulando las sentencias hasta detectar '\n'.
-   - Las cadenas completas se envían a GPS::_procesarSentencia().
+3. MECANISMO DE RETENCIÓN DE COORDENADAS (RESOLUCIÓN DE TÚNELES / TECHOS):
+   - Problema real en la vía pública:
+     Al ingresar a una estación subterránea, túnel, negocio techado o bajo marquesinas densas,
+     el módulo GPS pierde visibilidad satelital (Fix = false). Si las variables se resetearan
+     a (0.0, 0.0), el sistema perdería la ubicación del usuario ante una emergencia.
+   - Solución implementada en Centinela v2.0:
+     Cuando _gpsFix pasa a false, las últimas coordenadas válidas registradas se preservan
+     intactas en memoria RAM. Ante una activación de SOS o Caída, la telemetría despacha
+     estas últimas coordenadas certeras, permitiendo que los servicios de auxilio sepan
+     con exactitud dónde se encontraba el usuario instantes antes de perder satélites.
 ===============================================================================

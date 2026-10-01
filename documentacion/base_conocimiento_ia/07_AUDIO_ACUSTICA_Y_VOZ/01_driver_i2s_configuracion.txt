@@ -1,32 +1,29 @@
 ===============================================================================
-DRIVER DE AUDIO I2S: CONFIGURACIÓN EN ESP32 (AUDIO.CPP)
+DRIVER DE AUDIO I2S: CONFIGURACIÓN EN ESP32 (AUDIO.CPP) — CENTINELA v2.0
 ===============================================================================
-1. INICIALIZACIÓN DEL DRIVER I2S (I2S_NUM_0):
-   i2s_config_t cfg = {
-       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
-       .sample_rate = AUDIO_SAMPLE_RATE,              // 16000 Hz
-       .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,  // 16 bits
-       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,   // Mono
-       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-       .dma_buf_count = I2S_DMA_BUF_COUNT,            // 8 buffers
-       .dma_buf_len = I2S_DMA_BUF_LEN,                // 512 muestras por buffer
-       .use_apll = false,
-       .tx_desc_auto_clear = true,
-       .fixed_mclk = 0
-   };
+1. INICIALIZACIÓN DEL CANAL DIGITAL I2S:
+   - Frecuencia de muestreo: AUDIO_SAMPLE_RATE = 16000 Hz.
+   - Resolución: 16 bits por muestra.
+   - Formato de canal: Mono (canal izquierdo por defecto).
+   - Modo de transferencia: DMA (Direct Memory Access) para streaming en segundo plano
+     sin sobrecargar los núcleos de procesamiento del ESP32.
 
-2. ASIGNACIÓN DE PINES:
-   i2s_pin_config_t pines = {
-       .bck_io_num = I2S_BCK_PIN,       // GPIO 26
-       .ws_io_num = I2S_WS_PIN,         // GPIO 25
-       .data_out_num = I2S_DATA_PIN,    // GPIO 27
-       .data_in_num = I2S_PIN_NO_CHANGE
-   };
+2. ASIGNACIÓN DEFINITIVA DE PINES GPIO:
+   - Word Select / LRCLK (WS):   GPIO 25.
+   - Bit Clock (BCK):            GPIO 26.
+   - Data In / Out (DIN):        GPIO 27.
+   - Shutdown / Mute (SD):       GPIO 32 (Control digital: HIGH = On, LOW = Mute / Ahorro).
+   - Detección Jack TRRS:        GPIO 14 (INPUT_PULLUP, LOW = Auricular conectado).
 
-3. TRANSMISIÓN POR DMA:
-   Las muestras de audio se transfieren directamente desde el buffer de Bluetooth
-   hacia los buffers circulares de Acceso Directo a Memoria (DMA) mediante la llamada
-   i2s_write(I2S_PORT, tmpBuf, aLeer, &bytesEscritos, portMAX_DELAY), liberando
-   al procesador para seguir ejecutando el resto de las tareas de control.
+3. COMPATIBILIDAD DUAL DE CORE (ARDUINO-ESP32 v2.x Y v3.x):
+   - En el Core v2.0.x:
+     Se inicializa con i2s_driver_install(I2S_NUM_0, &cfg, 0, NULL) y i2s_set_pin(I2S_NUM_0, &pines).
+   - En el Core v3.x:
+     Se utilizan las nuevas directivas de canal de ESP-IDF (<driver/i2s_std.h>), asegurando
+     que el código compile limpiamente en cualquier versión del entorno de desarrollo.
+
+4. TRANSMISIÓN Y GENERACIÓN ACÚSTICA:
+   - Audio::actualizar() transfiere las muestras desde el buffer de Bluetooth por DMA.
+   - Audio::reproducirAlarma() y Audio::reproducirTono() generan ondas senoidales sintéticas
+     directamente en el bus I2S para alertas locales autónomas.
 ===============================================================================

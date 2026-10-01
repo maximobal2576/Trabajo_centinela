@@ -1,21 +1,28 @@
 ===============================================================================
-PROTOCOLO INTEGRAL DE ALERTA DE EMERGENCIA (FIRMWARE + APP)
+PROTOCOLO INTEGRAL DE ALERTA DE EMERGENCIA (FIRMWARE + APP) — CENTINELA v2.0
 ===============================================================================
-1. ACCIONES EJECUTADAS POR EL BASTÓN:
-   - Los 3 canales LEDC (motores Izquierdo, Central y Derecho) alternan pulsos
-     intermitentes al 100% de potencia (PWM 255) cada 200 ms.
-   - Si los auriculares están desconectados, se puede activar una baliza acústica
-     a través del altavoz de 3.2W.
-   - Se despachan de forma prioritaria los mensajes Bluetooth:
+1. ACCIONES AUTÓNOMAS LOCALES EN EL BASTÓN:
+   - Alarma Acústica Local Inmediata (Audio::reproducirAlarma()):
+     El bastón emite por su altavoz integrado de 3.2W una sirena de 1200 Hz para
+     alertar a cualquier persona presente en la vía pública, funcionando de manera
+     completamente autónoma aun si el teléfono celular está apagado o sin batería.
+   - Estimulación Háptica de Máxima Intensidad:
+     Los 3 canales LEDC (motores Izquierdo, Central y Derecho) pulsan intermitentemente
+     al 100% de potencia (PWM 255) cada 200 ms.
+   - Despacho Inmediato de Telemetría Bluetooth:
      * "EVENTO:EMERGENCIA"
-     * "SOS:1"
-     * "GPS:<lat>,<lon>,<fix>"
+     * "SOS:1" o "CAIDA:1"
+     * "GPS:<lat>,<lon>,<fix>" (preservando las últimas coordenadas válidas en memoria
+       si el usuario se encuentra dentro de un túnel o bajo una marquesina sin fix satelital).
 
-2. ACCIONES EJECUTADAS POR LA APLICACIÓN (CENTINELAAPP):
-   - Genera una alerta sonora de máximo volumen en el teléfono móvil del usuario.
-   - Lee las coordenadas satelitales recibidas por el bastón (o utiliza el GPS del teléfono
-     si el receptor del bastón carece de línea de vista satelital).
-   - Envía automáticamente un mensaje SMS o notificación de socorro a los contactos de
-     confianza registrados con enlace directo a Google Maps con la ubicación exacta.
-   - Inicia llamada automática a servicios de emergencia o al número de contacto primario.
+2. ACCIONES AUTOMÁTICAS EN LA APP ANDROID (CENTINELA_APP v2.0):
+   - Alerta Sonora y Voz en Español:
+     Dispara alarma sonora a máximo volumen en el smartphone y el motor de voz TTS
+     anuncia "Emergencia activada, solicitando auxilio".
+   - Despacho Telemático de Socorro:
+     * Toma las coordenadas satelitales reportadas por el bastón (o las del teléfono si el GPS
+       del bastón no tenía satélites visibles).
+     * Envía automáticamente mensajes SMS de auxilio a los contactos de emergencia registrados
+       con un enlace directo y exacto a Google Maps.
+     * Inicia una llamada telefónica directa al contacto de emergencia principal.
 ===============================================================================

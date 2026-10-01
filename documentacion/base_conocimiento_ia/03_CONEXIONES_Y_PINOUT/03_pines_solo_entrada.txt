@@ -1,19 +1,27 @@
 ===============================================================================
-PINES "SOLO ENTRADA" DEL ESP32: GPIO 34, 35, 36 Y 39 (GPI)
+PINES "SOLO ENTRADA" DEL ESP32: GPIO 34, 35, 36 Y 39 (GPI) — CENTINELA v2.0
 ===============================================================================
-1. CARACTERÍSTICA DE HARDWARE:
-   - En el silicio del ESP32, los terminales GPIO 34, 35, 36 (SENSOR_VP) y 39 (SENSOR_VN)
+1. CARACTERÍSTICA DE HARDWARE DEL ESP32:
+   - En el chip ESP32-WROOM-32, los terminales GPIO 34, 35, 36 (SENSOR_VP) y 39 (SENSOR_VN)
      son pines de entrada exclusivamente (General Purpose Input - GPI).
-   - No cuentan con transistores internos de salida (no pueden hacer digitalWrite HIGH/LOW ni PWM).
-   - Tampoco disponen de resistencias internas programables de PULLUP o PULLDOWN.
+   - Carecen de circuitos excitadores de salida (no admiten digitalWrite HIGH/LOW ni PWM).
+   - Tampoco poseen resistencias internas programables de PULL-UP ni PULL-DOWN.
 
-2. APROVECHAMIENTO ÓPTIMO EN CENTINELA v2.0:
-   - Dado que los ecos de los sensores ultrasónicos y la medición de batería son señales
-     que únicamente ingresan al microcontrolador, se asignaron deliberadamente a estos pines:
-     * GPIO 34: Entrada analógica ADC para monitoreo del voltaje de batería.
-     * GPIO 35: Entrada digital de tiempo de vuelo ECHO del sensor ultrasónico Frontal.
-     * GPIO 36: Entrada digital de tiempo de vuelo ECHO del sensor ultrasónico de Suelo.
-     * GPIO 39: Entrada digital de tiempo de vuelo ECHO del sensor ultrasónico de Radar.
-   - De este modo, los pines bidireccionales con capacidad de salida (GPIO 2, 4, 5, 13, 18, 19, 23, etc.)
-     quedan libres para excitar motores, controlar el servomotor y disparar los pulsos Trigger.
+2. APROVECHAMIENTO DE INGENIERÍA EN CENTINELA v2.0:
+   - Dado que los ecos ultrasónicos y la señal analógica del micrófono son entradas
+     puras al microcontrolador, se mapearon estratégicamente a estos pines GPI:
+     * GPIO 34: Entrada digital del eco ultrasónico Frontal (ECHO_FRONTAL).
+     * GPIO 35: Entrada digital del eco ultrasónico de Suelo (ECHO_SUELO).
+     * GPIO 36: Entrada digital del eco ultrasónico de Radar móvil (ECHO_RADAR).
+     * GPIO 39: Entrada analógica exclusiva (ADC1_CH3) para el Micrófono Electret
+                con preamplificador y filtro de desacople (captura de voz y VAD).
+   - De esta manera, se liberan todos los pines bidireccionales con capacidad de salida
+     (GPIO 2, 4, 5, 13, 14, 15, 18, 19, 23, 25, 26, 27, 32) para controlar actuadores,
+     generar PWM LEDC a motores, gobernar el servomotor y manejar la detección mecánica.
+
+3. DISPOSICIÓN DE LA BATERÍA (GPIO 33 / ADC1_CH5):
+   - La medición del voltaje de la batería se ubicó en GPIO 33. Al pertenecer al bloque
+     ADC1 (al igual que GPIO 39), las conversiones analógicas permanecen plenamente activas
+     e inmunes mientras el radio Bluetooth Classic SPP transmite telemetría (recordar que
+     el bloque ADC2 queda bloqueado cuando el radio Wi-Fi o Bluetooth del ESP32 está activo).
 ===============================================================================

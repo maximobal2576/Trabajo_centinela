@@ -1,28 +1,29 @@
 ===============================================================================
-LÓGICA DE CONMUTACIÓN AUTOMÁTICA: PARLANTE Y AURICULARES
+LÓGICA DE CONMUTACIÓN AUTOMÁTICA: PARLANTE Y AURICULARES — CENTINELA v2.0
 ===============================================================================
-1. CONDICIÓN DE AURICULARES:
+1. CONDICIÓN DE AURICULARES (AUDIO.CPP):
    bool Audio::auricularesConectados() {
-       return (digitalRead(PIN_JACK_DETECT) == NIVEL_JACK_CONECTADO); // LOW = insertado
+       return (digitalRead(PIN_JACK_DETECT) == NIVEL_JACK_CONECTADO); // GPIO 14 == LOW
    }
 
 2. CONTROL DEL PIN DE SHUTDOWN (I2S_SD_PIN = GPIO 32):
    void Audio::habilitarAmplificador(bool on) {
-       // Protección de privacidad acústica:
-       // Si hay auriculares conectados, el amplificador exterior NUNCA se enciende.
-       if (on && Estado::sistema.auricularesConectados) {
+       // Si hay auriculares conectados, el amplificador exterior NUNCA se enciende:
+       if (on && Estado::getAuricularesConectados()) {
            digitalWrite(I2S_SD_PIN, LOW);
            return;
        }
        digitalWrite(I2S_SD_PIN, on ? HIGH : LOW);
    }
 
-3. COMPORTAMIENTO RESULTANTE:
-   - Si el usuario conecta auriculares con ficha Jack 3.5mm:
-     * El altavoz público se silencia instantáneamente.
-     * El audio se transmite directamente a sus oídos.
-   - Si no hay auriculares:
-     * El altavoz emite indicaciones para guiar al usuario en la vía pública.
-   - Si se detiene la reproducción:
-     * El amplificador se apaga para que no consuma energía ni genere siseos de fondo.
+3. COMPORTAMIENTO RESULTANTE Y PRIVACIDAD:
+   - Con auriculares desconectados (GPIO 14 == HIGH):
+     * El amplificador MAX98357A se habilita cuando hay audio activo (GPIO 32 = HIGH).
+     * Las indicaciones de navegación y alertas se emiten por el altavoz de 3.2W.
+   - Con auriculares conectados (GPIO 14 == LOW):
+     * El pin SD se fuerza a LOW inmediatamente, apagando el altavoz público.
+     * La señal analógica viaja únicamente a los auriculares para total discreción.
+   - Sin audio reproduciéndose:
+     * El pin SD se mantiene en LOW para apagar el amplificador (< 0.6 µA de consumo),
+       suprimiendo todo siseo estático y maximizando la autonomía de la batería.
 ===============================================================================

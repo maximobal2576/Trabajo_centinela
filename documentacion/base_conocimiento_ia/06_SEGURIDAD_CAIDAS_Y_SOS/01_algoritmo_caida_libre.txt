@@ -1,21 +1,24 @@
 ===============================================================================
-ALGORITMO DE DETECCIÓN DE CAÍDA LIBRE (MPU-6050)
+ALGORITMO DE DETECCIÓN DE CAÍDA LIBRE (FASE 1: MPU-6050) — CENTINELA v2.0
 ===============================================================================
 1. FUNDAMENTO FÍSICO:
-   - En reposo, un acelerómetro sobre la superficie terrestre experimenta la gravedad (1G).
-   - Cuando un objeto entra en caída libre (se le resbala el bastón al usuario o la persona
-     se desploma), el marco de referencia inercial pasa a flotabilidad gravitacional aparente.
-   - La suma vectorial de los 3 ejes cae bruscamente hacia cero (0G).
+   - En reposo sobre la Tierra, todo cuerpo experimenta la aceleración gravitacional (1G).
+   - Cuando el bastón o el usuario caen por gravedad, el marco inercial entra en flotabilidad
+     aparente y la suma vectorial de los 3 ejes se aproxima a cero (0G).
 
 2. CÁLCULO EN FIRMWARE (MOVIMIENTO.CPP):
-   float x = mpu.getAccX();
-   float y = mpu.getAccY();
-   float z = mpu.getAccZ();
-   float modulo = sqrt(x*x + y*y + z*z);
+   float x = _mpu.getAccX();
+   float y = _mpu.getAccY();
+   float z = _mpu.getAccZ();
+   _accelTotal = sqrt(x*x + y*y + z*z);
 
-3. CRITERIO DE DISPARO:
-   - Constante: MPU_UMBRAL_CAIDA_LIBRE = 0.45f (en unidades de gravedad terrestre G).
-   - Si modulo > 0.15f Y modulo < 0.45f:
-     * El firmware determina que el bastón se encuentra en fase aérea de caída libre.
-     * Marca caidaDetectada = true.
+3. CRITERIO Y CONDICIÓN DE FASE 1:
+   - Constante: MPU_UMBRAL_CAIDA_LIBRE = 0.45f (en unidades de G).
+   - Si _accelTotal < 0.45G:
+     * Se marca _enCaidaLibre = true.
+     * Se guarda la marca de tiempo de inicio: _tsCaidaLibre = millis().
+     * El evento transiciona a EventoMovimiento::CAIDA_LIBRE.
+   - Para confirmar una caída real, esta fase debe ser seguida obligatoriamente
+     por un impacto violento (>1.75G) dentro de los siguientes 800 ms.
+     Esto previene falsos positivos por movimientos rápidos del brazo.
 ===============================================================================

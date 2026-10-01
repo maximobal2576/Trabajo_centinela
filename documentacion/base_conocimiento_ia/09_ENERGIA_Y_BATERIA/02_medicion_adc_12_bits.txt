@@ -1,20 +1,30 @@
 ===============================================================================
-MEDICIÓN ANALÓGICA DE BATERÍA (ADC 12 BITS EN GPIO 34)
+MEDICIÓN ANALÓGICA DE BATERÍA (ADC 12 BITS EN GPIO 33) — CENTINELA v2.0
 ===============================================================================
 1. CONFIGURACIÓN DEL CONVERTIDOR A/D:
-   - Resolución: analogReadResolution(12) -> Valores enteros de 0 a 4095.
-   - Pin analógico: PIN_BATERIA = GPIO 34 (Canal ADC1_CH6).
-   - El circuito divisor atenúa la tensión de batería con relación K = 33/133 ≈ 0.2481.
+   - Resolución: 12 bits -> Rango de valores digitales de 0 a 4095.
+   - Pin analógico: PIN_BATERIA = GPIO 33 (Canal ADC1_CH5).
+   - Relación de división del circuito: K = 47kΩ / (100kΩ + 47kΩ) ≈ 0.3197.
+   - Justificación de ingeniería: GPIO 33 pertenece al bloque de conversión ADC1,
+     lo que garantiza lecturas analógicas continuas e inmunes a la transmisión de
+     Bluetooth Classic SPP (el bloque ADC2 se deshabilita por radiofrecuencia).
 
 2. PUNTOS DE CALIBRACIÓN ADC EN EL CÓDIGO (CONFIGURACION.H):
-   - ADC_LECTURA_VACIA = 1910
-     Corresponde a la batería en su límite inferior seguro (~6.0 V a 6.2 V).
-   - ADC_LECTURA_LLENA = 2670
-     Corresponde a la batería al 100% de carga (8.40 V).
+   - ADC_LECTURA_VACIA = 1910:
+     Corresponde al límite inferior de seguridad del pack 2S Li-Ion (~6.0 V a 6.2 V),
+     evitando la degradación prematura de las celdas 18650.
+   - ADC_LECTURA_LLENA = 2670:
+     Corresponde a la batería con carga completa a 8.40 V (2.685 V en el pin GPIO 33).
 
-3. MAPEO A PORCENTAJE (BATERIA.CPP):
-   int Bateria::calcularPorcentaje(int lectura) {
-       int porcentaje = map(lectura, ADC_LECTURA_VACIA, ADC_LECTURA_LLENA, 0, 100);
-       return constrain(porcentaje, 0, 100);
+3. CÁLCULO DE PORCENTAJE (BATERIA.CPP):
+   uint8_t Bateria::calcularPorcentaje(uint16_t adc) {
+       if (adc <= ADC_LECTURA_VACIA) return 0;
+       if (adc >= ADC_LECTURA_LLENA) return 100;
+       long pct = ((long)(adc - ADC_LECTURA_VACIA) * 100L) / (ADC_LECTURA_LLENA - ADC_LECTURA_VACIA);
+       return (uint8_t)constrain(pct, 0, 100);
    }
+
+4. FILTRADO DIGITAL Y PROMEDIO MÓVIL:
+   Se toman 8 muestras (BATERIA_MUESTRAS) promediadas para filtrar ruidos por conmutación
+   del regulador Step-Down o demandas de corriente transitorias de los motores.
 ===============================================================================

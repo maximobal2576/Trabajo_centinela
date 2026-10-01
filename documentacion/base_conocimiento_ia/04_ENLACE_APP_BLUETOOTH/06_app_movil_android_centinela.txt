@@ -1,0 +1,59 @@
+===============================================================================
+APLICACIÓN MÓVIL ANDROID NATIVA: CENTINELA_APP v2.0
+===============================================================================
+1. DESCRIPCIÓN Y OBJETIVO DE ACCESIBILIDAD:
+   Centinela_App v2.0 es la aplicación móvil complementaria desarrollada en Python y Kivy,
+   optimizada para otorgar autonomía total e inmediata a personas con discapacidad visual
+   en la vía pública. Elimina la necesidad de configuraciones manuales o menús complejos.
+
+2. INNOVACIONES CLAVE DE AUTONOMÍA URBANA:
+   - Conexión Bluetooth 100% Automática y Desatendida:
+     * Un demonio en segundo plano (BluetoothService en services/bluetooth.py) escanea
+       continuamente en busca del dispositivo "Centinela-Baston" o dirección MAC vinculada.
+     * Si el Bluetooth del smartphone está desactivado, el servicio lo habilita de forma
+       automática mediante adapter.enable() en la capa nativa de Android.
+     * Al detectar el bastón, se conecta al socket RFCOMM sin que el usuario deba presionar
+       ningún botón ni abrir la pantalla de ajustes de Android.
+   - Seguimiento GPS Automático desde el Arranque:
+     * El servicio GPS (services/gps.py) se activa automáticamente en el evento on_start()
+       de la aplicación, garantizando telemetría y geolocalización inmediatas.
+   - Motor Text-to-Speech (TTS) Nativo en Español:
+     * Implementado en services/voz.py mediante la API nativa de Android (android.speech.tts.TextToSpeech).
+     * Anuncia en voz alta el estado de conexión, batería residual, desvíos y alertas
+       críticas para que el usuario no necesite mirar ni tocar la pantalla del teléfono.
+   - Botón SOS de Emergencia en la Pantalla de Inicio:
+     * Botón táctil sobredimensionado de acceso instantáneo en screens/inicio.py que dispara
+       el envío de SMS con enlace a Google Maps y llamada de socorro a contactos preconfigurados.
+
+3. COLORIMETRÍA E IDENTIDAD VISUAL DE ALTO CONTRASTE (WCAG 2.1 AAA):
+   Diseñado específicamente para personas con baja visión, visión residual o fotofobia:
+   - Fondo Principal y Barras: Bordó Profundo (#601323 y #2D1119).
+   - Acentos, Bordes y Títulos: Dorado Imperial (#C5A059) -> Ratio de contraste > 7:1.
+   - Textos Primarios y Tarjetas: Crema Suave (#FDFBF7) sobre fondo oscuro.
+   - Indicadores de Seguridad: Verde Estado (#2E7D32).
+   - Alertas Críticas y Botón SOS: Rojo Alerta (#D32F2F).
+
+4. ARQUITECTURA DE CÓDIGO (CARPETA Centinela_App/app/):
+   - main.py: Punto de entrada, inicialización de servicios, ScreenManager y ciclo de vida.
+   - services/:
+     * bluetooth.py: Demonio de auto-conexión, reconexión automática y socket RFCOMM.
+     * gps.py: Módulo Plyer/Android GPS con cálculo de distancias y rumbos.
+     * voz.py: Síntesis de voz TTS nativa en español.
+     * protocolo_baston.py: Parseo de la telemetría enviada por el ESP32.
+     * almacenamiento.py: Base de datos local JSON para contactos y configuración.
+   - screens/:
+     * inicio.py: Pantalla principal con botón SOS grande, estado del bastón y métricas.
+     * estado.py: Visualización de sensores en tiempo real.
+     * navegacion.py: Guía peatonal con cálculo de rumbo y esquinas.
+     * rutas.py: Registro y guardado de recorridos habituales.
+     * emergencia.py: Protocolo de socorro y marcación rápida.
+     * configuracion.py: Ajustes de umbrales y contactos de auxilio.
+
+5. PAQUETE Y DISTRIBUCIÓN (APK v2.0):
+   - Compilación: Generado mediante Buildozer en entorno Linux/WSL con soporte para
+     arquitecturas arm64-v8a y armeabi-v7a.
+   - Nombre de archivo: centinela-2.0-arm64-v8a_armeabi-v7a-debug.apk (46.9 MB).
+   - Ubicaciones:
+     * C:\Users\admin\Documents\proyecto innovador\versiones\Centinela_App\centinela-2.0-arm64-v8a_armeabi-v7a-debug.apk
+     * C:\Users\admin\Documents\proyecto innovador\versiones\Centinela_App\app\bin\centinela-2.0-arm64-v8a_armeabi-v7a-debug.apk
+===============================================================================

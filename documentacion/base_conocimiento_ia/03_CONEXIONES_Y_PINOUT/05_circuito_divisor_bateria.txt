@@ -1,32 +1,40 @@
 ===============================================================================
-CIRCUITO DIVISOR DE TENSIÓN PARA MEDICIÓN DE BATERÍA (8.4V A ADC)
+CIRCUITO DIVISOR DE TENSIÓN PARA MEDICIÓN DE BATERÍA (8.4V A ADC) — CENTINELA v2.0
 ===============================================================================
 1. DIAGRAMA ESQUEMÁTICO:
 
-   VBat (Pack 2S: 6.0V descargada a 8.4V plena carga)
+   VBat (Pack 2S Li-Ion: 6.0V vacía a 8.4V plena carga)
      │
-   [ R1 = 100 kΩ ]  (1% de tolerancia)
+   [ R1 = 100 kΩ ]  (Resistencia de precisión al 1%)
      │
-     ├─────────── GPIO 34 (ADC1 Canal 6 del ESP32)
+     ├─────────── GPIO 33 (ADC1 Canal 5 del ESP32)
      │
-   [ R2 = 33 kΩ ]   (1% de tolerancia)
+   [ R2 = 47 kΩ ]   (Resistencia de precisión al 1%)
      │
     GND
 
 2. CÁLCULO DE LA RELACIÓN DE DIVISIÓN:
    Factor de atenuación:
-   K = R2 / (R1 + R2) = 33.000 / (100.000 + 33.000) = 33 / 133 ≈ 0.24812
+   K = R2 / (R1 + R2) = 47.000 / (100.000 + 47.000) = 47 / 147 ≈ 0.31973
 
-3. TENSIONES RESULTANTES EN EL PIN ANALÓGICO:
+3. TENSIONES RESULTANTES EN EL PIN ANALÓGICO (GPIO 33):
    - Con batería llena (8.40 V):
-     Vpin = 8.40 V * 0.24812 = 2.084 V.
+     Vpin = 8.40 V * 0.31973 = 2.685 V.
    - Con batería nominal (7.40 V):
-     Vpin = 7.40 V * 0.24812 = 1.836 V.
-   - Con batería agotada (6.00 V):
-     Vpin = 6.00 V * 0.24812 = 1.488 V.
+     Vpin = 7.40 V * 0.31973 = 2.366 V.
+   - Con batería vacía / corte (6.00 V):
+     Vpin = 6.00 V * 0.31973 = 1.918 V.
 
-4. SEGURIDAD DEL CONVERTIDOR ADC DEL ESP32:
-   - Con la atenuación por defecto del ADC a 11dB (rango de 0V a 2.6V - 3.1V),
-     la tensión máxima de 2.084V se encuentra holgadamente dentro de la zona
-     lineal del convertidor y jamás sobrepasa los 3.3V de seguridad del microcontrolador.
+4. CONSIDERACIÓN CRÍTICA DE INGENIERÍA:
+   - Uso exclusivo de ADC1:
+     En el ESP32, el bloque de conversión ADC2 comparte hardware con el módem de radio.
+     Cuando el Bluetooth Classic (BluetoothSerial) se activa, cualquier lectura en pines
+     ADC2 arroja lecturas erróneas o bloqueos. Al conectar el divisor a GPIO 33 (ADC1_CH5),
+     las lecturas de nivel de batería se ejecutan de manera ininterrumpida y estable
+     durante todo el tiempo de conexión activa con la aplicación móvil.
+   - La tensión máxima (2.685V) se encuentra dentro de la zona de respuesta lineal
+     del ADC configurado a 11dB de atenuación, protegiendo al ESP32 sin superar sus 3.3V.
+   - Calibración en firmware (Configuracion.h):
+     * ADC_LECTURA_VACIA = 1910 (~6.0V)
+     * ADC_LECTURA_LLENA = 2670 (~8.4V)
 ===============================================================================

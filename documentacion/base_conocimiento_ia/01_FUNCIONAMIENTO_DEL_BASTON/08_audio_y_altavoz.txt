@@ -1,30 +1,37 @@
 ===============================================================================
-SISTEMA DE AUDIO DIGITAL Y ALTAVOZ (I2S + TRRS)
+SISTEMA DE AUDIO DIGITAL Y ALTAVOZ (I2S + TRRS) — CENTINELA v2.0
 ===============================================================================
 1. PROPÓSITO:
-   Emitir indicaciones de voz, balizas sonoras y alertas acústicas de alta
-   claridad sin zumbidos ni interferencias eléctricas.
+   Emitir indicaciones de navegación vocal, tonos de baliza sonora y sirenas acústicas
+   de emergencia con fidelidad cristalina sin zumbidos ni interferencias parásitas.
 
 2. HARDWARE:
-   - DAC Amplificador: MAX98357A (potencia de salida de 3.2W en mono).
-   - Altavoz integrado: Cono de 4Ω / 3W montado en la estructura del bastón.
-   - Conector Jack 3.5mm: TRRS con interruptor de detección mecánica de inserción.
+   - DAC Amplificador: MAX98357A (potencia de 3.2W Clase D mono sobre carga de 4Ω).
+   - Altavoz integrado: Cono acústico de 4Ω / 3W sellado en el cuerpo del bastón.
+   - Conector Jack 3.5mm: Hembra TRRS con lámina mecánica auxiliar de detección.
 
-3. CONEXIONES DEL BUS DIGITAL I2S:
+3. CONEXIONES DEL BUS DIGITAL I2S Y CONTROL:
+   - Word Select (WS / LRCK): GPIO 25.
    - Bit Clock (BCK):         GPIO 26.
-   - Word Select (WS/LRCK):   GPIO 25.
    - Data In (DIN):           GPIO 27.
-   - Shutdown / Mute (SD):    GPIO 32 (Control de apagado del amplificador).
-   - Jack Detect:             GPIO 33 (INPUT_PULLUP, detecta inserción de auriculares).
+   - Shutdown / Mute (SD):    GPIO 32 (Control de habilitación del amplificador).
+   - Jack Detect:             GPIO 14 (INPUT_PULLUP, detección física de auricular conectado).
+   * NOTA DE INGENIERÍA: Se reubicó Jack Detect a GPIO 14 para asignar GPIO 33
+     al divisor de batería (ADC1_CH5), garantizando funcionamiento con Bluetooth activo.
 
-4. LÓGICA DE CONMUTACIÓN INTELIGENTE:
-   - Auriculares NO conectados:
-     * El amplificador MAX98357A se habilita cuando hay muestras de audio disponibles.
-     * El audio se emite por el altavoz público del bastón.
-   - Auriculares CONECTADOS (GPIO 33 == LOW):
-     * El pin SD del MAX98357A se fuerza a LOW de inmediato (apagado total).
-     * El audio viaja únicamente por la salida física cableada a los auriculares,
-       asegurando privacidad auditiva y evitando acoples.
-   - Sin audio:
-     * El amplificador se apaga para que no consuma energía (<0.6µA en shutdown).
+4. LÓGICA DE CONMUTACIÓN AUTOMÁTICA Y PRIVACIDAD AUDITIVA:
+   - Sin auriculares enchufados (GPIO 14 == HIGH):
+     * Al emitir voz o tono, el pin GPIO 32 (SD) pasa a HIGH habilitando el MAX98357A.
+     * El sonido se emite por el altavoz público del bastón para orientar al usuario.
+   - Con auriculares enchufados (GPIO 14 == LOW):
+     * El pin GPIO 32 (SD) se fuerza a LOW permanentemente (apagando el amplificador público).
+     * El audio se transmite de forma exclusivamente privada al auricular del usuario.
+   - En reposo (sin audio reproduciéndose):
+     * El amplificador se apaga (SD = LOW) reduciendo el consumo a < 0.6 µA y suprimiendo
+       todo ruido blanco o "hiss" de fondo.
+
+5. ALARMA ACÚSTICA AUTÓNOMA LOCAL:
+   - En caso de Caída Total o pulsación de SOS, el método Audio::reproducirAlarma() sintetiza
+     directamente una sirena de 1200 Hz por el altavoz, garantizando una alerta audible
+     en la calle de manera independiente a si el teléfono móvil está conectado o apagado.
 ===============================================================================

@@ -3,25 +3,26 @@ TABLA COMPLETA DE ASIGNACIÓN DE PINES GPIO DEL ESP32 (PINOUT CENTINELA v2.0)
 ===============================================================================
 PIN GPIO   DIRECCIÓN      COMPONENTE CONECTADO             NOTAS ELÉCTRICAS
 -------------------------------------------------------------------------------
-GPIO 2     SALIDA         TRIG Sensor Radar (HC-SR04)      Pulso digital 10µs (3.3V)
-GPIO 4     SALIDA (LEDC0) Gate MOSFET Motor Izquierdo      PWM 5kHz 8-bit (0-255)
-GPIO 5     SALIDA (LEDC1) Gate MOSFET Motor Central        PWM 5kHz 8-bit (0-255)
-GPIO 13    SALIDA (PWM)   Señal Servo SG90 Radar           Pulsos 50Hz (ESP32Servo)
-GPIO 15    ENTRADA PULLUP Pulsador de Emergencia (SOS)     Presionado = LOW (a masa)
-GPIO 16    ENTRADA (RX2)  GPS NEO-6M (Línea TX del GPS)    UART2 por hardware a 9600 baud
-GPIO 17    SALIDA (TX2)   GPS NEO-6M (Línea RX del GPS)    UART2 por hardware a 9600 baud
-GPIO 18    SALIDA (LEDC2) Gate MOSFET Motor Derecho        PWM 5kHz 8-bit (0-255)
-GPIO 19    SALIDA         TRIG Sensor Suelo (HC-SR04)      Pulso digital 10µs (3.3V)
-GPIO 21    I2C (SDA)      MPU-6050 (Acelerómetro/Giro)     Bus I2C (Wire) con pull-up 3.3V
-GPIO 22    I2C (SCL)      MPU-6050 (Reloj I2C)             Bus I2C (Wire) con pull-up 3.3V
-GPIO 23    SALIDA         TRIG Sensor Frontal (HC-SR04)    Pulso digital 10µs (3.3V)
-GPIO 25    SALIDA (I2S)   MAX98357A - WS (Word Select)     Reloj de palabra canal izquierdo
-GPIO 26    SALIDA (I2S)   MAX98357A - BCK (Bit Clock)      Reloj de bit de audio digital
-GPIO 27    SALIDA (I2S)   MAX98357A - DIN (Data Input)     Muestras de audio PCM 16-bit
-GPIO 32    SALIDA         MAX98357A - SD_MODE (Shutdown)   HIGH = Audio On | LOW = Mute
-GPIO 33    ENTRADA PULLUP Detección Jack 3.5mm TRRS        Auricular conectado = LOW
-GPIO 34    ENTRADA (ADC1) Divisor de Tensión Batería       Medición 0V-2.1V (12 bits)
-GPIO 35    ENTRADA PURA   ECHO Sensor Frontal (HC-SR04)    Vía divisor 1kΩ/2kΩ (Input only)
-GPIO 36    ENTRADA PURA   ECHO Sensor Suelo (HC-SR04)      Vía divisor 1kΩ/2kΩ (Input only)
-GPIO 39    ENTRADA PURA   ECHO Sensor Radar / Micrófono    Vía divisor / entrada ADC
+GPIO 2     SALIDA         TRIG Sensor Radar (HC-SR04)      Pulso digital 10µs. Resistencia pull-down 10kΩ.
+GPIO 4     SALIDA (LEDC0) Gate MOSFET Motor Izquierdo      PWM 5kHz 8-bit (0-255). Alerta lateral izquierda.
+GPIO 5     SALIDA (LEDC1) Gate MOSFET Motor Central        PWM 5kHz 8-bit (0-255). Alerta frontal / pozo.
+GPIO 13    SALIDA (PWM)   Señal Servo SG90 Radar           Pulsos 50Hz (ESP32Servo). Barrido 45° a 135°.
+GPIO 14    ENTRADA PULLUP Detección Jack 3.5mm TRRS        LOW = Auricular conectado (silencia altavoz).
+GPIO 15    ENTRADA PULLUP Pulsador de Emergencia (SOS)     LOW = Presionado. Debounce por software 50ms.
+GPIO 16    ENTRADA (RX2)  GPS NEO-6M (Línea TX del GPS)    UART2 por hardware a 9600 baud (8N1).
+GPIO 17    SALIDA (TX2)   GPS NEO-6M (Línea RX del GPS)    UART2 por hardware a 9600 baud (opcional).
+GPIO 18    SALIDA (LEDC2) Gate MOSFET Motor Derecho        PWM 5kHz 8-bit (0-255). Alerta lateral derecha.
+GPIO 19    SALIDA         TRIG Sensor Suelo (HC-SR04)      Pulso digital 10µs. Detección de pozos y baches.
+GPIO 21    I2C (SDA)      MPU-6050 (Acelerómetro/Giro)     Bus I2C (Wire) a 400 kHz con pull-ups de 4.7kΩ.
+GPIO 22    I2C (SCL)      MPU-6050 (Reloj I2C)             Bus I2C (Wire) a 400 kHz con pull-ups de 4.7kΩ.
+GPIO 23    SALIDA         TRIG Sensor Frontal (HC-SR04)    Pulso digital 10µs. Obstáculos torso y cabeza.
+GPIO 25    SALIDA (I2S)   MAX98357A - WS (Word Select)     Word Select / LRCLK (16 kHz audio digital).
+GPIO 26    SALIDA (I2S)   MAX98357A - BCK (Bit Clock)      Bit Clock continuo de audio digital DMA.
+GPIO 27    SALIDA (I2S)   MAX98357A - DIN (Data Input)     Muestras de audio PCM 16-bit mono.
+GPIO 32    SALIDA         MAX98357A - SD_PIN (Shutdown)    HIGH = Audio On | LOW = Mute / Ahorro energía.
+GPIO 33    ENTRADA (ADC1) Divisor de Tensión Batería       ADC1_CH5 (100kΩ/47kΩ). Compatible con Bluetooth.
+GPIO 34    ENTRADA PURA   ECHO Sensor Frontal (HC-SR04)    Input-only con divisor 1kΩ/2kΩ (5V a 3.3V).
+GPIO 35    ENTRADA PURA   ECHO Sensor Suelo (HC-SR04)      Input-only con divisor 1kΩ/2kΩ (5V a 3.3V).
+GPIO 36    ENTRADA PURA   ECHO Sensor Radar (HC-SR04)      Input-only con divisor 1kΩ/2kΩ (5V a 3.3V).
+GPIO 39    ENTRADA (ADC1) Micrófono Electret / VAD         ADC1_CH3 exclusivo analógico (captura de voz).
 ===============================================================================

@@ -1,25 +1,31 @@
 ===============================================================================
-TELEMETRÍA ENVIADA DEL BASTÓN A LA APLICACIÓN (BASTÓN ➔ APP)
+TELEMETRÍA ENVIADA DEL BASTÓN A LA APLICACIÓN (BASTÓN ➔ APP) — CENTINELA v2.0
 ===============================================================================
 1. FRECUENCIA DE DESPACHO:
-   Cada 150 milisegundos (TIEMPO_BLUETOOTH), si existe un cliente conectado.
+   Cada 150 milisegundos (TIEMPO_BLUETOOTH), cuando existe un cliente conectado.
 
-2. FORMATO DE TRAMAS (ASCII CLAVE:VALOR CON SALTO DE LÍNEA):
+2. FORMATO DE TRAMAS REGULARES (ASCII CLAVE:VALOR CON SALTO DE LÍNEA):
 
    CAMPO TRANSMITIDO        EJEMPLO REAL            DESCRIPCIÓN DEL VALOR
    ----------------------------------------------------------------------------
-   EVENTO:<int>             EVENTO:1                0=Normal, 1=Frontal, 2=Radar,
-                                                    3=Pozo, 4=Caída, 5=SOS, 6=BatBaja.
-   DIRECCION:<int>          DIRECCION:4             0=Ninguna, 1=Izq, 2=DiagIzq,
-                                                    3=Centro, 4=DiagDer, 5=Der.
-   BATERIA:<int>            BATERIA:82              Porcentaje de carga residual (0-100%).
-   AUDIO:<0|1>              AUDIO:0                 1 si hay streaming de audio sonando.
-   BLUETOOTH:<0|1>          BLUETOOTH:1             1 si el enlace de radio está activo.
-   ESTADO:<int>             ESTADO:1                Estado de la máquina de estados.
-   AURICULAR:<0|1>          AURICULAR:0             1 si hay auriculares conectados en el Jack.
-   GPS:<lat>,<lon>,<fix>    GPS:-34.6037,-58.3816,1 Coordenadas decimales y flag de fijación.
+   ALERTA:<int>             ALERTA:2                0=Sin Alerta, 1=Precaución, 2=Peligro,
+                                                    3=Crítico (Pozo/Inminente), 4=Emergencia.
+   ZONA:<int>               ZONA:2                  0=Ninguno, 1=Izquierda, 2=Centro,
+                                                    3=Derecha, 4=Todos (Peligro global).
+   FRONTAL:<int>            FRONTAL:65              Distancia frontal en centímetros.
+   SUELO:<int>              SUELO:32                Distancia al suelo en centímetros.
+   RADAR:<int>              RADAR:48                Distancia mínima del barrido móvil [cm].
+   IMU:<int>                IMU:0                   0=Normal, 1=Caída libre, 2=Impacto,
+                                                    3=Caída total confirmada, 4=Inclinado.
+   SOS:<0|1>                SOS:1                   1 si el botón de emergencia está activo.
+   CAIDA:<0|1>              CAIDA:0                 1 si se confirmó caída total.
+   GPS:<lat>,<lon>,<fix>    GPS:-34.6037,-58.3816,1 Latitud, longitud y estado del fix (1/0).
+                                                    Si fix=0, retiene últimas coordenadas válidas.
+   BATERIA:<int>            BATERIA:85              Porcentaje de carga de batería (0-100%).
 
-3. MENSAJES DE EVENTO ASÍNCRONOS INMEDIATOS:
-   - Al pulsar el botón SOS: Transmite al instante "EVENTO:EMERGENCIA" y "SOS:1".
-   - Al detectar voz: Transmite "MIC_START", trozos "MIC_CHUNK:<base64>" y "MIC_STOP".
+3. MENSAJES DE EVENTOS ASÍNCRONOS Y DE PRIORIDAD:
+   - Al confirmarse Caída o SOS: Se transmite inmediatamente "EVENTO:EMERGENCIA",
+     "SOS:1", "EVENTO:CAIDA" y la coordenada satelital GPS.
+   - Al detectar voz (VAD): Transmite "MIC_START", fragmentos "MIC_CHUNK:<base64>" y "MIC_STOP".
+   - Al cambiar estado de batería crítica: Transmite "EVENTO:BAT_BAJA".
 ===============================================================================

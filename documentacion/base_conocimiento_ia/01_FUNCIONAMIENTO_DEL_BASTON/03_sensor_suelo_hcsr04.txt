@@ -1,26 +1,30 @@
 ===============================================================================
-SENSOR ULTRASÓNICO DE SUELO (HC-SR04)
+SENSOR ULTRASÓNICO DE SUELO (HC-SR04) — CENTINELA v2.0
 ===============================================================================
 1. PROPÓSITO:
    Monitorear continuamente el relieve del suelo inmediatamente delante del bastón
-   para advertir la presencia de pozos, desniveles bruscos, baches o escalones hacia abajo.
+   para advertir con antelación la presencia de pozos, desniveles bruscos, baches
+   o escalones descendentes, protegiendo al usuario de caídas al caminar.
 
-2. PINES DE CONEXIÓN:
-   - TRIGGER: GPIO 19 (Salida digital).
-   - ECHO:    GPIO 36 (Entrada del ESP32, pin solo entrada con divisor resistivo).
+2. PINES DE CONEXIÓN DEFINITIVOS:
+   - TRIGGER: GPIO 19 (Salida digital del ESP32, pulso de disparo de 10 µs).
+   - ECHO:    GPIO 35 (Entrada pura del ESP32, pin GPI sin pull-up interno,
+              protegido con divisor de tensión 1 kΩ / 2 kΩ para adaptar de 5V a 3.3V).
 
-3. PRINCIPIO DE DETECCIÓN DE POZOS:
+3. PRINCIPIO DE DETECCIÓN DE POZOS Y DESNIVELES:
    - En una marcha normal sobre piso plano, el sensor apunta hacia abajo en diagonal
-     y registra una distancia de suelo constante (típicamente entre 25 cm y 50 cm).
+     y registra una distancia de suelo constante (típicamente entre 15 cm y 35 cm).
    - Cuando se presenta un pozo, el borde de una vereda rota o una escalera descendente,
-     la distancia medida aumenta abruptamente.
-   - Si la distancia supera el umbral de alerta (DISTANCIA_ALERTA_MAX = 80 cm),
-     el sistema determina la pérdida de piso plano o presencia de desnivel profundo.
+     la distancia medida por el haz ultrasónico aumenta abruptamente.
+   - Si la distancia supera el umbral de alerta (DISTANCIA_ALERTA_MAX = 80 cm) o se
+     pierde el retorno acústico (> 60 cm respecto a la normal), el sistema determina
+     la pérdida de piso plano o presencia de un desnivel negativo peligroso.
 
 4. RESPUESTA DEL SISTEMA:
-   - Prioridad: PRIORIDAD_ALTA (2). Tiene mayor precedencia que los obstáculos normales.
-   - Genera el evento EVENTO_POZO y la dirección DIRECCION_SUELO.
-   - El estado del sistema transiciona a SISTEMA_POZO.
-   - Activa el motor de vibración CENTRAL con una intensidad PWM fija de PWM_POZO = 130
-     para proporcionar una sensación táctil inconfundible al usuario.
+   - Prioridad: NivelAlerta::CRITICO (evaluado con alta precedencia en Decision.cpp).
+   - Clasificación de evento: EventoMovimiento o Zona::CENTRO con NivelAlerta::CRITICO.
+   - Salida háptica: Activa el motor de vibración CENTRAL con un patrón y nivel PWM
+     específico (PWM_POZO = 130) para brindar una sensación táctil inconfundible
+     que distingue un desnivel negativo de un obstáculo frontal ordinario.
+   - Telemetría: Transmite "SUELO:<distancia>" y "ALERTA:3" por Bluetooth a la app.
 ===============================================================================

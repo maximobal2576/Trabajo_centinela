@@ -1,30 +1,34 @@
 ===============================================================================
-RADAR ANGULAR CON SERVOMOTOR (HC-SR04 + SG90)
+RADAR ANGULAR CON SERVOMOTOR (HC-SR04 + SG90) — CENTINELA v2.0
 ===============================================================================
 1. PROPÓSITO:
-   Escanear el espacio perimétrico a los lados del usuario para advertir sobre
-   obstáculos laterales o en diagonal antes de que colisione con ellos.
+   Escanear el espacio perimétrico a ambos lados del usuario para advertir sobre
+   obstáculos laterales, ramas salientes, postes o transeúntes antes de colisionar.
 
-2. PINES DE CONEXIÓN:
-   - SEÑAL SERVO SG90: GPIO 13 (PWM generado por librería ESP32Servo).
-   - TRIGGER RADAR:    GPIO 2 (Salida digital).
-   - ECHO RADAR:       GPIO 39 (Entrada analógica/digital con divisor resistivo).
+2. PINES DE CONEXIÓN DEFINITIVOS:
+   - SEÑAL SERVO SG90: GPIO 13 (PWM generado mediante la librería ESP32Servo).
+   - TRIGGER RADAR:    GPIO 2 (Salida digital del ESP32 con pull-down externo de 10 kΩ
+                       para garantizar el arranque correcto del chip sin entrar en modo Flash).
+   - ECHO RADAR:       GPIO 36 (Entrada pura del ESP32 / SENSOR_VP, con divisor resistivo
+                       1 kΩ / 2 kΩ de 5V a 3.3V).
+   * NOTA CRÍTICA DE DISEÑO: Se reubicó este eco de GPIO 39 a GPIO 36 para liberar
+     por completo el canal analógico GPIO 39 (ADC1_CH3) para el micrófono de voz.
 
-3. CINEMÁTICA DEL BARRIDO:
-   - Ángulo inicial: 45° (Izquierda).
-   - Ángulo central: 90° (Centro).
-   - Ángulo final:   135° (Derecha).
-   - Paso angular:   5° por cada invocación del Scheduler (cada 60 ms).
-   - Al alcanzar 135°, la dirección de giro se invierte hacia 45° en vaivén continuo.
+3. CINEMÁTICA DEL BARRIDO CONTINUO:
+   - Ángulo inicial: RADAR_IZQUIERDA = 45° (Sector izquierdo).
+   - Ángulo central: RADAR_CENTRO = 90° (Sector frontal).
+   - Ángulo final:   RADAR_DERECHA = 135° (Sector derecho).
+   - Paso angular:   RADAR_PASO = 5° por cada invocación del Scheduler (cada 60 ms).
+   - Al alcanzar 135°, la dirección de giro se invierte automáticamente hacia 45° en vaivén.
 
 4. DISCRETIZACIÓN EN TRES ZONAS ESPACIALES:
-   - Zona Izquierda: Ángulo <= 67° -> Actualiza Estado::sensores.radarIzquierda.
-   - Zona Central:   Ángulo entre 68° y 112° -> Actualiza Estado::sensores.radarCentro.
-   - Zona Derecha:   Ángulo >= 113° -> Actualiza Estado::sensores.radarDerecha.
+   - Zona Izquierda: Ángulo <= 67°  -> Actualiza Estado::setDistanciaRadar(Zona::IZQUIERDA, dist).
+   - Zona Central:   Ángulo 68°-112°-> Actualiza Estado::setDistanciaRadar(Zona::CENTRO, dist).
+   - Zona Derecha:   Ángulo >= 113° -> Actualiza Estado::setDistanciaRadar(Zona::DERECHA, dist).
 
-5. RESPUESTA HÁPTICA:
-   - Obstáculo solo a la izquierda -> Activa motor IZQUIERDO.
-   - Obstáculo solo a la derecha   -> Activa motor DERECHO.
-   - Obstáculo al centro           -> Activa motor CENTRAL.
-   - Obstáculo en diagonal         -> Activa combinaciones (Izq+Centro o Der+Centro).
+5. RESPUESTA HÁPTICA DIRECCIONAL:
+   - Obstáculo en sector izquierdo -> Activa motor IZQUIERDO (GPIO 4).
+   - Obstáculo en sector frontal   -> Activa motor CENTRAL (GPIO 5).
+   - Obstáculo en sector derecho   -> Activa motor DERECHO (GPIO 18).
+   - Obstáculos en diagonal        -> Activa combinación coordinada (Izq+Centro o Der+Centro).
 ===============================================================================

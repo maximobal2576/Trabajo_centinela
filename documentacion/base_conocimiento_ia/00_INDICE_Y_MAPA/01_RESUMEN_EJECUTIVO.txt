@@ -1,24 +1,46 @@
 ===============================================================================
-CENTINELA v2.0 — RESUMEN EJECUTIVO (VISIÓN RÁPIDA)
+CENTINELA v2.0 — RESUMEN EJECUTIVO (VISIÓN DEFINITIVA DE INGENIERÍA)
 ===============================================================================
 1. NOMBRE DEL PROYECTO: Centinela v2.0
 2. TIPO DE DISPOSITIVO: Bastón asistivo inteligente para personas con discapacidad visual.
-3. CEREBRO / CONTROLADOR: ESP32-WROOM-32 (Dual Core 240 MHz, WiFi y Bluetooth integrados).
+3. CEREBRO / CONTROLADOR: ESP32-WROOM-32 (Dual Core 240 MHz, Bluetooth Classic SPP + I2S Audio).
 4. SENSORES DE PERCEPCIÓN:
-   - 3x Sensores ultrasónicos HC-SR04: Frontal (obstáculos al paso), Suelo (pozos y escalones)
-     y Radar móvil (barrido angular en 3 zonas).
-   - 1x Servomotor SG90 que mueve el sensor de radar de 45° a 135°.
-   - 1x Acelerómetro/Giroscopio MPU-6050 (I2C) para detección instantánea de caídas e impactos.
+   - 3x Sensores ultrasónicos HC-SR04:
+     * Frontal (TRIG: GPIO 23, ECHO: GPIO 34) -> Obstáculos a la altura del torso y cabeza.
+     * Suelo (TRIG: GPIO 19, ECHO: GPIO 35) -> Pozos, desniveles y bajadas de cordón/escaleras.
+     * Radar móvil (TRIG: GPIO 2, ECHO: GPIO 36) -> Barrido perimétrico de 45° a 135°.
+   - 1x Servomotor SG90 (GPIO 13) para barrido angular continuo del radar.
+   - 1x Acelerómetro/Giroscopio MPU-6050 (I2C: GPIO 21 SDA / GPIO 22 SCL) con algoritmo
+     de caída en dos fases (<0.45G durante 80-150ms + impacto >1.75G en <800ms) que discrimina
+     el golpeteo rítmico normal de la marcha del ciego.
+   - 1x Micrófono analógico electret (GPIO 39 / ADC1_CH3) exclusivo para captura vocal y VAD.
 5. ACTUADORES Y RESPUESTAS:
-   - 3x Motores vibradores hápticos PWM (Izquierdo, Central, Derecho) manejados por MOSFETs.
-   - 1x Módulo DAC I2S MAX98357A con altavoz de 3.2W y conector Jack TRRS de 3.5mm.
+   - 3x Motores vibradores hápticos PWM (Izq: GPIO 4, Centro: GPIO 5, Der: GPIO 18) manejados
+     por MOSFETs Canal N, con escalamiento de intensidad según proximidad del obstáculo.
+   - 1x DAC I2S MAX98357A (LRCK: GPIO 25, BCK: GPIO 26, DIN: GPIO 27, SD: GPIO 32) con altavoz
+     de 3.2W, conector Jack TRRS de 3.5mm con autodetección en GPIO 14 (silencia parlante exterior)
+     y sirena acústica local autónoma (1200 Hz) que suena ante SOS/caída incluso sin teléfono.
 6. GEOLOCALIZACIÓN Y ENLACE:
-   - 1x Receptor GPS NEO-6M conectado al puerto Serial2 por hardware.
-   - Enlace Bluetooth SPP con la aplicación móvil Android "CentinelaApp".
-   - 1x Botón de pánico SOS con filtrado antirrebote por software (50 ms).
-7. ALIMENTACIÓN:
-   - 2x Baterías Li-Ion 18650 en serie (7.4V nominal) con regulador Step-Down de alta eficiencia.
-   - Autonomía estimada de ~5.5 horas de uso continuo.
-8. ARQUITECTURA DE FIRMWARE:
-   - 12 módulos cooperativos coordinados por un Scheduler basado en millis() sin delay().
+   - 1x Receptor GPS NEO-6M en UART2 (RX: GPIO 16, TX: GPIO 17) a 9600 baudios con retención
+     de últimas coordenadas válidas en memoria RAM ante pérdida de señal satelital en túneles.
+   - 1x Botón de pánico SOS (GPIO 15) con debounce digital por software de 50 ms.
+   - Bluetooth SPP dual (texto de telemetría y tramas binarias PCM) compatible tanto con la app
+     móvil Android nativa como con la Web Companion App accesible.
+7. APLICACIÓN MÓVIL ANDROID (CENTINELA_APP v2.0):
+   - Conexión desatendida 100% automática por demonio en segundo plano (sin intervención táctil).
+   - Activación automática de GPS al iniciar la aplicación.
+   - Motor Text-to-Speech (TTS) nativo en español para autonomía total de la persona ciega.
+   - Botón SOS de emergencia accesible y sobredimensionado en la pantalla de inicio.
+   - Identidad visual oficial de alto contraste (WCAG 2.1 AAA): Bordó Profundo (#601323),
+     Dorado Imperial (#C5A059), Crema (#FDFBF7), Verde (#2E7D32) y Rojo Alerta (#D32F2F).
+   - Paquete compilado APK nativo de 46.9 MB (centinela-2.0-arm64-v8a_armeabi-v7a-debug.apk).
+8. ALIMENTACIÓN Y ENERGÍA:
+   - Pack 2S de baterías Li-Ion 18650 (7.4V nominal / 8.4V máxima) con step-down a 5.0V / 3A.
+   - Divisor resistivo 100kΩ / 47kΩ conectado a GPIO 33 (ADC1_CH5), garantizando lecturas
+     estables e inmunes a la transmisión de Bluetooth (el bloque ADC1 no se inhabilita por radio).
+   - Autonomía real estimada de 5 a 6 horas continuas de uso en vía pública.
+9. ARQUITECTURA DE FIRMWARE:
+   - 15 módulos estáticos desacoplados basados en getters/setters y enums fuertemente tipados.
+   - Scheduler cooperativo no bloqueante gobernado por millis() sin llamadas a delay().
+   - Compatibilidad dual con los Cores de Arduino ESP32 v2.x y v3.x.
 ===============================================================================

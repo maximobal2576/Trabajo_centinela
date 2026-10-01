@@ -1,24 +1,40 @@
 ===============================================================================
-MAPA Y ESTRUCTURA DE LOS 31 ARCHIVOS DEL FIRMWARE DE CENTINELA v2.0
+MAPA Y ESTRUCTURA DE ARCHIVOS DEL FIRMWARE DE CENTINELA v2.0
 ===============================================================================
-ARCHIVO                     LÍNEAS  PROPÓSITO Y RESPONSABILIDAD
+MÓDULO / ARCHIVO               PROPÓSITO Y RESPONSABILIDAD TÉCNICA
 -------------------------------------------------------------------------------
-Centinela_v2.ino            ~120    Punto de entrada: setup() inicia todo y loop() corre Scheduler.
-Configuracion.h             ~194    Pines GPIO, constantes de tiempos, umbrales y buffers.
-Tipos.h                     ~120    Definición de enums (Evento, EstadoSistema, etc.) y structs.
-Estado.h / Estado.cpp       ~140    Singleton con las variables de sensores, salida, sistema y app.
-Scheduler.h / Scheduler.cpp ~175    Planificador cooperativo en tiempo real basado en millis().
-Sensores.h / Sensores.cpp   ~140    Driver de lectura ultrasónica (Frontal y Suelo) con pulseIn().
-Radar.h / Radar.cpp         ~160    Control del servo SG90 y barrido angular de 45° a 135°.
-Movimiento.h/Movimiento.cpp ~150    Wrapper del MPU-6050 y detección de caídas e impactos.
-Decision.h / Decision.cpp   ~220    Lógica de prioridades que determina eventos y salidas PWM.
-Salida.h / Salida.cpp       ~105    Control de los 3 canales PWM LEDC para motores vibradores.
-Bluetooth.h / Bluetooth.cpp ~340    Pila SPP dual: comandos ASCII y buffer circular de audio PCM.
-Audio.h / Audio.cpp         ~220    Driver I2S para MAX98357A y conmutación de Jack de auriculares.
-GPS.h / GPS.cpp             ~175    Driver de Hardware Serial2 y decodificador de tramas NMEA.
-Emergencia.h/Emergencia.cpp ~115    Lectura del pulsador SOS con filtro antirrebote de 50 ms.
-Microfono.h / Microfono.cpp ~200    Captura de voz por ADC, detección VAD y codificación Base64.
-Bateria.h / Bateria.cpp     ~100    Lectura del divisor resistivo, filtro exponencial y porcentajes.
-Diagnostico.h/Diagnostico.cpp ~130  Telemetría en tiempo real por monitor serie USB a 115200 baud.
-GUIA_EXPOSICION.md          ~637    Documento formal completo de exposición (20 páginas).
+Centinela_v2.ino               Punto de entrada: setup() inicializa los 15 subsistemas
+                               en secuencia estricta y loop() delega al Scheduler.
+Configuracion.h                Definiciones de pines GPIO, frecuencias PWM, umbrales
+                               cinemáticos, buffers y temporizaciones de tareas.
+Tipos.h                        Tipos de datos comunes: enum class Zona, NivelAlerta,
+                               EventoMovimiento, EstadoBateria y struct PaqueteTelemetria.
+Estado.h / Estado.cpp          Repositorio atómico centralizado (Single Source of Truth)
+                               con métodos estáticos getters/setters fuertemente tipados.
+Scheduler.h / Scheduler.cpp    Planificador cooperativo en tiempo real basado en millis()
+                               que ejecuta cada tarea según su prioridad y periodo.
+Sensores.h / Sensores.cpp      Lectura de sensores ultrasónicos Frontal y Suelo por pulseIn()
+                               con descarte de ecos espurios y promediado móvil.
+Radar.h / Radar.cpp            Control cinemático del servomotor SG90 (45° a 135°) y
+                               adquisición de distancias angulares con HC-SR04 móvil.
+Movimiento.h / Movimiento.cpp  Manejo del IMU MPU-6050 y máquina de estados en dos fases
+                               (<0.45G durante 80-150ms + impacto >1.75G en <800ms).
+Decision.h / Decision.cpp      Motor de inferencia determinístico que pondera riesgos,
+                               determina NivelAlerta y asigna intensidades PWM a motores.
+Salida.h / Salida.cpp          Control de los 3 canales PWM LEDC para motores hápticos,
+                               con compatibilidad dual para ESP32 Arduino Core v2.x y v3.x.
+Bluetooth.h / Bluetooth.cpp    Pila SPP dual: despacho periódico de telemetría ASCII y
+                               recepción/buffer circular de streaming de audio PCM.
+Audio.h / Audio.cpp            Driver digital I2S para MAX98357A, control de conmutación
+                               por Jack TRRS 3.5mm (GPIO 14) y generador de sirena local.
+GPS.h / GPS.cpp                Driver de UART2 por hardware (GPIO 16/17), parseo NMEA RMC
+                               y retención en memoria de las últimas coordenadas válidas.
+Emergencia.h / Emergencia.cpp  Supervisión del pulsador SOS (GPIO 15) con debounce de 50ms
+                               y activación prioritaria del protocolo de socorro.
+Microfono.h / Microfono.cpp    Captura analógica por ADC1_CH3 (GPIO 39 exclusivo) con
+                               detección VAD de voz y empaquetado para streaming a la app.
+Bateria.h / Bateria.cpp        Monitoreo analógico de batería 2S en GPIO 33 (ADC1_CH5),
+                               filtro de promedio móvil y cálculo con histéresis.
+Diagnostico.h / Diagnostico.cpp Impresión periódica tabular de telemetría y estado de los
+                               subsistemas por el monitor serie USB a 115200 baudios.
 ===============================================================================

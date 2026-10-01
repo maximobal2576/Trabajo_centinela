@@ -1,45 +1,58 @@
 ===============================================================================
-DEFINICIÓN DE TIPOS Y ESTRUCTURAS: TIPOS.H
+DEFINICIÓN DE TIPOS Y ESTRUCTURAS FUERTEMENTE TIPADAS: TIPOS.H
 ===============================================================================
-1. ENUMERACIONES (ENUMS):
+1. ENUMERACIONES CON ENUM CLASS (C++11):
+   Se utilizan enum class con tipo subyacente uint8_t para evitar colisiones en el
+   espacio de nombres global y asegurar máxima eficiencia en la memoria RAM del ESP32.
 
-   enum Evento {
-       EVENTO_NORMAL,            // Operación despejada
-       EVENTO_OBSTACULO_FRONTAL, // Detección frontal fija
-       EVENTO_OBSTACULO_RADAR,   // Detección en barrido móvil
-       EVENTO_POZO,              // Desnivel abrupto en el suelo
-       EVENTO_CAIDA,             // Caída libre o golpe MPU-6050
-       EVENTO_EMERGENCIA,        // Pulsador SOS presionado
-       EVENTO_BATERIA_BAJA,      // Batería por debajo del 15%
-       EVENTO_ERROR              // Falla en subsistema crítico
-   };
+   A) enum class Zona : uint8_t {
+          NINGUNO   = 0,  // Sin obstáculo en rango de alerta
+          IZQUIERDA = 1,  // Sector 45° a 75° del servo
+          CENTRO    = 2,  // Sector 76° a 105° o sensor frontal
+          DERECHA   = 3,  // Sector 106° a 135° del servo
+          TODOS     = 4   // Emergencia o múltiples sectores bloqueados
+      };
 
-   enum EstadoSistema {
-       SISTEMA_INICIO,           // Arranque y calibración inicial
-       SISTEMA_NORMAL,           // Operación rutinaria activa
-       SISTEMA_ALERTA,           // Obstáculo cercano detectado
-       SISTEMA_POZO,             // Peligro de desnivel o bache
-       SISTEMA_CAIDA,            // Protocolo de caída activo
-       SISTEMA_EMERGENCIA,       // Protocolo de auxilio SOS activo
-       SISTEMA_DIAGNOSTICO,      // Modo de prueba serial
-       SISTEMA_ERROR             // Estado bloqueado por fallo
-   };
+   B) enum class NivelAlerta : uint8_t {
+          SIN_ALERTA = 0, // Camino libre (> 80 cm)
+          PRECAUCION = 1, // Obstáculo lejano (PWM suave)
+          PELIGRO    = 2, // Obstáculo cercano (PWM medio/fuerte)
+          CRITICO    = 3, // Obstáculo muy próximo (<=20 cm) o pozo en suelo
+          EMERGENCIA = 4  // Caída confirmada o pulsador SOS
+      };
 
-   enum Direccion {
-       DIRECCION_NINGUNA,
-       DIRECCION_IZQUIERDA,
-       DIRECCION_DIAGONAL_IZQUIERDA,
-       DIRECCION_CENTRO,
-       DIRECCION_DIAGONAL_DERECHA,
-       DIRECCION_DERECHA,
-       DIRECCION_FRONTAL,
-       DIRECCION_SUELO
-   };
+   C) enum class EventoMovimiento : uint8_t {
+          NORMAL      = 0, // Aceleración de marcha común (0.8G a 1.2G)
+          CAIDA_LIBRE = 1, // Ingravidez transitoria (< 0.45G)
+          IMPACTO     = 2, // Desaceleración violenta (> 1.75G)
+          CAIDA_TOTAL = 3, // Caída libre + Impacto en menos de 800 ms
+          INCLINADO   = 4  // Bastón caído en el piso
+      };
 
-   enum Prioridad {
-       PRIORIDAD_BAJA    = 0,
-       PRIORIDAD_NORMAL  = 1,
-       PRIORIDAD_ALTA    = 2,
-       PRIORIDAD_CRITICA = 3
-   };
+   D) enum class EstadoBateria : uint8_t {
+          NORMAL  = 0,    // Nivel seguro (> 20%)
+          BAJA    = 1,    // Alerta al usuario (<= 15%)
+          CRITICA = 2     // Inminente apagado (<= 5%)
+      };
+
+2. ESTRUCTURAS PLAIN OLD DATA (POD):
+   - struct LecturaIMU:
+     float accelTotal;
+     float anguloX;
+     float anguloY;
+     EventoMovimiento evento;
+
+   - struct PaqueteTelemetria:
+     NivelAlerta nivelAlerta;
+     Zona zonaPeligro;
+     uint16_t distFrontal;
+     uint16_t distSuelo;
+     uint16_t distRadar;
+     EventoMovimiento eventoIMU;
+     uint8_t bateriaPorcentaje;
+     bool sosActivo;
+     bool caidaActiva;
+     float gpsLat;
+     float gpsLon;
+     bool gpsFix;
 ===============================================================================

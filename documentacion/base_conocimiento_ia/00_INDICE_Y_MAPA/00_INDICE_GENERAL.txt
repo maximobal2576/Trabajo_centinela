@@ -1,88 +1,90 @@
 ===============================================================================
 CENTINELA v2.0 — BASE DE CONOCIMIENTO GRANULAR PARA MODELOS DE IA Y HUMANOS
 ===============================================================================
-MAPA Y DIRECTORIO GENERAL DE CONTENIDOS
+MAPA Y DIRECTORIO GENERAL DE CONTENIDOS (VERSIÓN DEFINITIVA 2.0)
 ===============================================================================
 
-Esta carpeta contiene la documentación desarmada en módulos atómicos y archivos
-cortos (.txt) para facilitar la búsqueda instantánea de cualquier dato técnico,
-función, componente o algoritmo del bastón asistivo inteligente Centinela v2.0.
+Esta carpeta contiene la documentación técnica estructurada en módulos atómicos
+y archivos cortos (.txt) para facilitar la búsqueda instantánea y sin fricción de
+cualquier dato técnico, función, componente, conexión o algoritmo del bastón asistivo
+inteligente Centinela v2.0.
 
 ESTRUCTURA DE SUBDIRECTORIOS:
 -------------------------------------------------------------------------------
 00_INDICE_Y_MAPA/
-  - 00_INDICE_GENERAL.txt            -> Este archivo. Mapa de navegación global.
-  - 01_RESUMEN_EJECUTIVO.txt         -> Visión compacta del proyecto en 15 líneas.
-  - 02_COMO_BUSCAR_EN_ESTA_CARPETA.txt -> Guía para prompts de IA y consulta humana.
+  - 00_INDICE_GENERAL.txt            -> Este archivo. Mapa de navegación global del sistema.
+  - 01_RESUMEN_EJECUTIVO.txt         -> Visión compacta del proyecto y sus innovaciones clave.
+  - 02_COMO_BUSCAR_EN_ESTA_CARPETA.txt -> Guía para prompts de IA y consulta humana ágil.
 
 01_FUNCIONAMIENTO_DEL_BASTON/
-  - 01_como_opera_el_baston.txt       -> Ciclo completo de encendido, sensado y aviso.
-  - 02_sensor_frontal_hcsr04.txt      -> Detección de obstáculos frontales directos.
-  - 03_sensor_suelo_hcsr04.txt        -> Detección de pozos, desniveles y escalones.
-  - 04_radar_angular_servo.txt        -> Barrido del servo de 45° a 135° (3 zonas).
-  - 05_vibracion_haptica_motores.txt  -> Escala PWM según distancia y patrón de alarma.
-  - 06_deteccion_caidas_mpu6050.txt   -> Caída libre (<0.45G) y golpe fuerte (>1.75G).
-  - 07_boton_emergencia_sos.txt       -> Pulsador físico con filtro antirrebote de 50ms.
-  - 08_audio_y_altavoz.txt            -> Reproducción de voz y conmutación de auriculares.
+  - 01_como_opera_el_baston.txt       -> Ciclo completo de encendido, sensado continuo y aviso.
+  - 02_sensor_frontal_hcsr04.txt      -> Detección de obstáculos frontales a nivel torso/cabeza.
+  - 03_sensor_suelo_hcsr04.txt        -> Detección de pozos, desniveles y bajadas de cordón.
+  - 04_radar_angular_servo.txt        -> Barrido del servo SG90 de 45° a 135° (3 zonas).
+  - 05_vibracion_haptica_motores.txt  -> Escala PWM por cercanía y patrones de emergencia.
+  - 06_deteccion_caidas_mpu6050.txt   -> Máquina de 2 fases (<0.45G + >1.75G) anti-falsos positivos.
+  - 07_boton_emergencia_sos.txt       -> Pulsador físico (GPIO 15) con debounce de 50ms y alarma local.
+  - 08_audio_y_altavoz.txt            -> DAC I2S MAX98357A, conmutación TRRS y sirena autónoma.
 
 02_HARDWARE_Y_COMPONENTES/
-  - 01_lista_componentes_completa.txt -> Lista de los 15 componentes del sistema.
-  - 02_esp32_wroom_32.txt             -> Características de la placa controladora.
+  - 01_lista_componentes_completa.txt -> Lista exhaustiva de los componentes del sistema.
+  - 02_esp32_wroom_32.txt             -> Características de la placa controladora ESP32.
   - 03_hc_sr04_ultrasonicos.txt       -> Especificaciones de los 3 sensores ultrasónicos.
-  - 04_sg90_servomotor.txt            -> Servomotor de 9g para barrido de radar.
-  - 05_mpu6050_imu.txt                -> Acelerómetro y giroscopio de 6 ejes I2C.
-  - 06_max98357a_dac_i2s.txt          -> Amplificador digital de 3.2W mono.
-  - 07_gps_neo_6m.txt                 -> Módulo de geolocalización satelital UART.
-  - 08_motores_vibradores_y_mosfets.txt-> Actuadores táctiles y transistores de potencia.
-  - 09_baterias_18650_y_fuente.txt    -> Pack 2S (7.4V) y regulador Step-Down.
-  - 10_jack_trrs_3_5mm.txt            -> Conector hembra 4 polos con detección.
+  - 04_sg90_servomotor.txt            -> Servomotor de 9g para barrido de radar móvil.
+  - 05_mpu6050_imu.txt                -> Acelerómetro y giroscopio de 6 ejes por bus I2C.
+  - 06_max98357a_dac_i2s.txt          -> Amplificador digital de 3.2W mono Clase D.
+  - 07_gps_neo_6m.txt                 -> Módulo de geolocalización satelital UART2 (9600 baud).
+  - 08_motores_vibradores_y_mosfets.txt-> Actuadores táctiles ERM y transistores MOSFET N.
+  - 09_baterias_18650_y_fuente.txt    -> Pack 2S Li-Ion (7.4V/8.4V) y Step-Down MP1584/LM2596.
+  - 10_jack_trrs_3_5mm.txt            -> Conector hembra 4 polos con detección en GPIO 14.
 
 03_CONEXIONES_Y_PINOUT/
-  - 01_tabla_pines_gpio_esp32.txt     -> Mapeo pin a pin de todo el circuito.
-  - 02_divisores_tension_5v_a_3v3.txt -> Protección de pines ECHO con 1kΩ y 2kΩ.
-  - 03_pines_solo_entrada.txt         -> Restricciones de GPIO 34, 35, 36 y 39.
-  - 04_circuito_mosfet_motores.txt    -> Conexión Gate-Drain-Source de vibradores.
-  - 05_circuito_divisor_bateria.txt   -> Divisor 100kΩ/33kΩ para monitoreo de 8.4V.
+  - 01_tabla_pines_gpio_esp32.txt     -> Mapeo definitivo pin a pin sin conflictos de hardware.
+  - 02_divisores_tension_5v_a_3v3.txt -> Protección de pines ECHO (GPIO 34, 35, 36) con 1kΩ y 2kΩ.
+  - 03_pines_solo_entrada.txt         -> Restricciones de GPIO 34, 35, 36 y 39 (GPI).
+  - 04_circuito_mosfet_motores.txt    -> Conexión Gate-Drain-Source de los 3 motores hápticos.
+  - 05_circuito_divisor_bateria.txt   -> Divisor 100kΩ/47kΩ en GPIO 33 (ADC1_CH5) inmune a BT.
 
 04_ENLACE_APP_BLUETOOTH/
-  - 01_modo_bluetooth_spp.txt         -> Perfil Serial Port, nombre y código PIN.
-  - 02_telemetria_baston_a_app.txt    -> Cadenas de estado enviadas a la app móvil.
-  - 03_comandos_app_a_baston.txt      -> Instrucciones recibidas desde la app.
-  - 04_streaming_audio_pcm_recibido.txt-> Paquetes binarios con cabecera 0xA5 0x5A.
-  - 05_streaming_microfono_a_app.txt  -> Captura de voz, Base64 y tramas MIC_CHUNK.
+  - 01_modo_bluetooth_spp.txt         -> Perfil Serial Port, nombre "Centinela-Baston" y PIN 1234.
+  - 02_telemetria_baston_a_app.txt    -> Tramas ASCII CLAVE:VALOR y eventos asíncronos.
+  - 03_comandos_app_a_baston.txt      -> Instrucciones recibidas desde la app (PING, SOS, Baliza).
+  - 04_streaming_audio_pcm_recibido.txt-> Paquetes binarios con cabecera mágica 0xA5 0x5A.
+  - 05_streaming_microfono_a_app.txt  -> Captura vocal por GPIO 39, VAD y tramas MIC_CHUNK.
+  - 06_app_movil_android_centinela.txt-> App nativa Android (Kivy, autoconexión, auto-GPS, TTS y APK).
 
 05_ARQUITECTURA_SOFTWARE_ESP32/
-  - 01_estructura_de_archivos.txt     -> Resumen de los 31 archivos del firmware.
-  - 02_scheduler_planificador.txt     -> Ejecución no bloqueante con millis().
-  - 03_estado_global_singleton.txt    -> Clase Estado y structs compartidas.
-  - 04_motor_de_decision.txt          -> Jerarquía de prioridades determinística.
-  - 05_configuracion_h.txt            -> Constantes, pines y umbrales del sistema.
-  - 06_tipos_h.txt                    -> Enums y estructuras de datos comunes.
+  - 01_estructura_de_archivos.txt     -> Resumen de los 15 módulos desacoplados del firmware.
+  - 02_scheduler_planificador.txt     -> Planificador cooperativo no bloqueante con millis().
+  - 03_estado_global_singleton.txt    -> Repositorio atómico con getters/setters tipados.
+  - 04_motor_de_decision.txt          -> Jerarquía de prioridades determinística de 5 niveles.
+  - 05_configuracion_h.txt            -> Constantes, pines definitivos y umbrales del sistema.
+  - 06_tipos_h.txt                    -> Enums fuertemente tipados (enum class) y structs POD.
 
 06_SEGURIDAD_CAIDAS_Y_SOS/
-  - 01_algoritmo_caida_libre.txt      -> Detección de pérdida de sustentación.
-  - 02_algoritmo_impacto_brusco.txt   -> Detección de impacto severo contra el suelo.
-  - 03_filtro_antirrebote_boton_sos.txt-> Debounce de 50 milisegundos.
-  - 04_protocolo_alerta_emergencia.txt-> Disparo de auxilio, vibración y aviso por app.
+  - 01_algoritmo_caida_libre.txt      -> Detección de ingravidez aparente (<0.45G durante 80-150ms).
+  - 02_algoritmo_impacto_brusco.txt   -> Impacto severo (>1.75G) con ventana de correlación (800ms).
+  - 03_filtro_antirrebote_boton_sos.txt-> Debounce digital de 50 milisegundos en GPIO 15.
+  - 04_protocolo_alerta_emergencia.txt-> Sirena local autónoma, vibración total y coordenadas GPS.
 
 07_AUDIO_ACUSTICA_Y_VOZ/
-  - 01_driver_i2s_configuracion.txt   -> Parámetros de audio (16kHz, 16bit, DMA).
-  - 02_conmutacion_parlante_auricular.txt-> Muteo del altavoz por pin de Jack detect.
-  - 03_deteccion_actividad_voz_vad.txt-> Umbral analógico de micrófono para grabación.
+  - 01_driver_i2s_configuracion.txt   -> Configuración I2S (16kHz, 16bit DMA) dual Core v2/v3.
+  - 02_conmutacion_parlante_auricular.txt-> Muteo por Jack Detect (GPIO 14) y Shutdown (GPIO 32).
+  - 03_deteccion_actividad_voz_vad.txt-> Detección analógica en GPIO 39 para captura vocal.
 
 08_GEOLOCALIZACION_GPS/
-  - 01_configuracion_uart_gps.txt     -> Puerto Serial2 del ESP32 a 9600 baudios.
-  - 02_parseo_sentencia_gprmc.txt     -> Extracción de datos en la trama $GPRMC.
-  - 03_conversion_coordenadas_decimales.txt-> Matemática de conversión ddmm a decimal.
+  - 01_configuracion_uart_gps.txt     -> UART2 hardware a 9600 baudios y retención de fix.
+  - 02_parseo_sentencia_gprmc.txt     -> Extracción robusta de latitud, longitud y velocidad.
+  - 03_conversion_coordenadas_decimales.txt-> Conversión matemática NMEA a coordenadas decimales.
 
 09_ENERGIA_Y_BATERIA/
-  - 01_baterias_18650_y_autonomia.txt -> Cálculo de consumo y ~5.5h de autonomía.
-  - 02_medicion_adc_12_bits.txt       -> Conversión analógica a porcentaje.
-  - 03_filtro_suavizado_exponencial.txt-> Promedio móvil de 8 muestras.
-  - 04_umbrales_alerta_bateria.txt    -> Alarma al 15% y recuperación al 18%.
+  - 01_baterias_18650_y_autonomia.txt -> Pack 2S, curva de descarga y ~5.5h de autonomía.
+  - 02_medicion_adc_12_bits.txt       -> Lectura en GPIO 33 (ADC1_CH5) sin conflicto con Bluetooth.
+  - 03_filtro_suavizado_exponencial.txt-> Promedio móvil de 8 muestras para eliminar fluctuaciones.
+  - 04_umbrales_alerta_bateria.txt    -> Alarma al 15% y recuperación al 18% con histéresis.
 
 10_GUIA_DE_COMPILACION_Y_SUBIDA/
-  - 01_configuracion_arduino_ide.txt  -> Selección de placa, velocidad y opciones.
-  - 02_librerias_necesarias.txt       -> Librerías requeridas del gestor.
-  - 03_diagnostico_serial_usb.txt     -> Monitor serial a 115200 baudios.
+  - 01_configuracion_arduino_ide.txt  -> Configuración de placa ESP32 Dev Module y particiones.
+  - 02_librerias_necesarias.txt       -> ESP32Servo, MPU6050_light y compatibilidad v2.x/v3.x.
+  - 03_diagnostico_serial_usb.txt     -> Monitor serial a 115200 baudios y tabla de telemetría.
 ===============================================================================
