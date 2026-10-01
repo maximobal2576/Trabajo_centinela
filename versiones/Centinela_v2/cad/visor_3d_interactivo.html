@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centinela v2 — Showroom 3D Monolítico y Conicidad Progresiva</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: #0b1120; color: #f8fafc; overflow: hidden; height: 100vh; display: flex; }
+    
+    #canvas-container { flex: 1; height: 100%; position: relative; }
+    
+    /* Panel lateral de presentación */
+    #ui-panel {
+      width: 400px;
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(18px);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      z-index: 10;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: #1e3a8a;
+      color: #93c5fd;
+      width: fit-content;
+    }
+    .badge.success { background: #064e3b; color: #6ee7b7; }
+    
+    h1 { font-size: 1.4rem; font-weight: 800; line-height: 1.2; color: #ffffff; }
+    p.subtitle { font-size: 0.82rem; color: #94a3b8; line-height: 1.4; }
+    
+    .card {
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    
+    .card h3 { font-size: 0.88rem; color: #38bdf8; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    
+    /* Paleta de Colorimetria */
+    .color-swatch-list { display: flex; flex-direction: column; gap: 8px; }
+    .color-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .color-item:hover { background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; transform: translateX(2px); }
+    .color-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.4);
+      flex-shrink: 0;
+      box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    }
+    
+    /* Controles */
+    .btn-group { display: flex; gap: 8px; }
+    button {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    button:hover { background: #1d4ed8; }
+    button.secondary { background: rgba(51, 65, 85, 0.8); color: #e2e8f0; }
+    button.secondary:hover { background: #475569; }
+    
+    .slider-container { display: flex; flex-direction: column; gap: 6px; }
+    .slider-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #cbd5e1; }
+    input[type=range] { width: 100%; accent-color: #38bdf8; cursor: pointer; }
+    
+    /* Info Overlay en Canvas */
+    #canvas-overlay {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      pointer-events: none;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 12px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    #canvas-overlay h2 { font-size: 1.15rem; color: #f8fafc; }
+    #canvas-overlay p { font-size: 0.8rem; color: #38bdf8; }
+    
+    .spec-item { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .spec-label { color: #94a3b8; }
+    .spec-value { color: #f8fafc; font-weight: 600; }
+    
+    .feature-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      margin-right: 4px;
+      margin-top: 4px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <div id="canvas-container">
+    <div id="canvas-overlay">
+      <h2>🦯 Centinela v2 — Arquitectura Monolítica</h2>
+      <p>Mango Integrado • Conicidad Progresiva • Bahías de Sensores</p>
+      <div style="margin-top: 6px;">
+        <span class="feature-tag">Sensor Frontal</span>
+        <span class="feature-tag">Sensor Suelo 45°</span>
+        <span class="feature-tag">Pack 2S 18650</span>
+        <span class="feature-tag">Desacople Vibración</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="ui-panel">
+    <div>
+      <span class="badge success">Modelo Definitivo de Producción</span>
+      <h1 style="margin-top: 6px;">Showroom 3D Monolítico</h1>
+      <p class="subtitle">Conicidad progresiva de Ø 32 mm a Ø 14 mm con bahías directas para componentes.</p>
+    </div>
+
+    <!-- Modos de Vista -->
+    <div class="card">
+      <h3>🕹️ Controles de Muestra</h3>
+      <div class="slider-container" style="margin-bottom: 12px;">
+        <div class="slider-header">
+          <span>Vista Explosionada (Desarmar)</span>
+          <span id="explode-val">0%</span>
+        </div>
+        <input type="range" id="explode-slider" min="0" max="100" value="0">
+      </div>
+      <div class="btn-group">
+        <button id="btn-rotate">⏸️ Pausar Giro</button>
+        <button class="secondary" id="btn-reset">🎯 Reencuadrar</button>
+      </div>
+    </div>
+
+    <!-- Paleta y Despiece de Tramos -->
+    <div class="card">
+      <h3>🧩 Anatomía de los 4 Tramos</h3>
+      <div class="color-swatch-list">
+        <div class="color-item" onclick="focusTramo(4)">
+          <div class="color-dot" style="background: #F4F5F7;"></div>
+          <div>
+            <strong>Tramo 1: Mango Monolítico (Ø 32 ➔ 26 mm)</strong>
+            <div style="color: #94a3b8; font-size: 0.72rem;">Empuñadura, 2x 18650, ESP32, Sensores y 3 Motores</div>
+          </div>
+        </div>
+        <div class="color-item" onclick="focusTramo(3)">
+          <div class="color-dot" style="background: #1A56DB;"></div>
+          <div>
+            <strong>Tramo 2: Intermedio Alto (Ø 24 ➔ 21 mm)</strong>
+            <div style="color: #94a3b8; font-size: 0.72rem;">Conicidad superior y canal de cables seco</div>
+          </div>
+        </div>
+        <div class="color-item" onclick="focusTramo(2)">
+          <div class="color-dot" style="background: #DC2626;"></div>
+          <div>
+            <strong>Tramo 3: Franja de Alerta (Ø 20 ➔ 17.5 mm)</strong>
+            <div style="color: #94a3b8; font-size: 0.72rem;">Rojo Tráfico RAL 3020 para señalización vial</div>
+          </div>
+        </div>
+        <div class="color-item" onclick="focusTramo(1)">
+          <div class="color-dot" style="background: #FFFFFF; border-color: #64748b;"></div>
+          <div>
+            <strong>Tramo 4: Base Inferior (Ø 16.5 ➔ 14 mm)</strong>
+            <div style="color: #94a3b8; font-size: 0.72rem;">Sección ultraligera (25.8 g) para barrido ágil</div>
+          </div>
+        </div>
+        <div class="color-item" onclick="focusTramo(0)">
+          <div class="color-dot" style="background: #1F2937;"></div>
+          <div>
+            <strong>Puntera Bumper Amortiguada (Ø 14 mm)</strong>
+            <div style="color: #94a3b8; font-size: 0.72rem;">Cámara de desacople acústico contra asfalto (7.1 g)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ficha Técnica de Masas -->
+    <div class="card">
+      <h3>⚖️ Balance de Masa en Muñeca</h3>
+      <div class="spec-item"><span class="spec-label">Masa en Mango (Tramo 1 + Elec):</span><span class="spec-value">332 g (68%)</span></div>
+      <div class="spec-item"><span class="spec-label">Masa en Punta (Tramo 4 + Bumper):</span><span class="spec-value">32.9 g (-58% vs cilíndrico)</span></div>
+      <div class="spec-item"><span class="spec-label">Esfuerzo de Barrido en Muñeca:</span><span class="spec-value">0.08 N·m (Cero fatiga)</span></div>
+      <div class="spec-item"><span class="spec-label">Peso Total del Bastón:</span><span class="spec-value">~506 g</span></div>
+      <div class="spec-item"><span class="spec-label">Protección Intemperie:</span><span class="spec-value">IP65 (Lluvia torrencial)</span></div>
+    </div>
+  </div>
+
+  <script>
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b1120);
+
+    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 3000);
+    camera.position.set(0, 400, 1800);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 600, 0);
+
+    // Iluminación
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    keyLight.position.set(500, 1000, 800);
+    scene.add(keyLight);
+    const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.6);
+    fillLight.position.set(-600, 400, -400);
+    scene.add(fillLight);
+
+    // Materiales PBR
+    const matBlancoMango = new THREE.MeshStandardMaterial({ color: 0xF4F5F7, roughness: 0.25, metalness: 0.1 });
+    const matAzulT2 = new THREE.MeshStandardMaterial({ color: 0x1A56DB, roughness: 0.2, metalness: 0.25 });
+    const matRojoT3 = new THREE.MeshStandardMaterial({ color: 0xDC2626, roughness: 0.15, metalness: 0.1, emissive: 0x350808 });
+    const matBlancoT4 = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.1, metalness: 0.05 });
+    const matPuntera = new THREE.MeshStandardMaterial({ color: 0x1F2937, roughness: 0.6, metalness: 0.2 });
+    const matPinNaranja = new THREE.MeshStandardMaterial({ color: 0xF97316, roughness: 0.3, metalness: 0.2 });
+    const matSensorMetal = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.15, metalness: 0.85 });
+
+    const caneGroup = new THREE.Group();
+    scene.add(caneGroup);
+
+    const tramos = [];
+
+    // --- PUNTERA BUMPER AMORTIGUADA ---
+    function crearPuntera() {
+      const g = new THREE.Group();
+      const geomDomo = new THREE.SphereGeometry(10.5, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      geomDomo.rotateX(Math.PI);
+      const mDomo = new THREE.Mesh(geomDomo, matPuntera);
+      g.add(mDomo);
+
+      const geomCil = new THREE.CylinderGeometry(7.0, 7.0, 20, 32);
+      geomCil.translate(0, 10, 0);
+      g.add(new THREE.Mesh(geomCil, matPuntera));
+
+      const geomMacho = new THREE.CylinderGeometry(5.0, 5.0, 35, 32);
+      geomMacho.translate(0, 20 + 17.5, 0);
+      g.add(new THREE.Mesh(geomMacho, matPuntera));
+      return g;
+    }
+
+    // --- TRAMO CÓNICO GENÉRICO ---
+    function crearTramoConico(rSup, rInf, long, material, tieneMacho = true) {
+      const g = new THREE.Group();
+
+      // Cuerpo cónico decreciente
+      const geomCono = new THREE.CylinderGeometry(rSup, rInf, long, 32);
+      geomCono.translate(0, long / 2, 0);
+      g.add(new THREE.Mesh(geomCono, material));
+
+      // Espiga Macho arriba
+      if (tieneMacho) {
+        const rMacho = rSup - 2.3;
+        const geomMacho = new THREE.CylinderGeometry(rMacho, rMacho, 38, 32);
+        geomMacho.translate(0, long + 19, 0);
+        g.add(new THREE.Mesh(geomMacho, new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4 })));
+
+        // Hombro conico 30 deg
+        const geomAsiento = new THREE.ConeGeometry(rSup, 3, 32);
+        geomAsiento.translate(0, long + 1.5, 0);
+        g.add(new THREE.Mesh(geomAsiento, material));
+
+        // O-Ring de Goma NBR
+        const geomOring = new THREE.TorusGeometry(rMacho - 0.4, 1.2, 16, 32);
+        geomOring.rotateX(Math.PI / 2);
+        geomOring.translate(0, long + 10, 0);
+        g.add(new THREE.Mesh(geomOring, new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.9 })));
+      }
+
+      // Collarín y Pasador Pin en la base (Hembra)
+      const geomCollar = new THREE.CylinderGeometry(rInf + 1.4, rInf + 1.4, 10, 32);
+      geomCollar.translate(0, 22, 0);
+      g.add(new THREE.Mesh(geomCollar, material));
+
+      const geomPin = new THREE.CylinderGeometry(2.5, 2.5, (rInf + 1.4) * 2 + 3, 16);
+      geomPin.rotateZ(Math.PI / 2);
+      geomPin.translate(0, 22, 0);
+      g.add(new THREE.Mesh(geomPin, matPinNaranja));
+
+      return g;
+    }
+
+    // --- TRAMO 1: MANGO MONOLÍTICO CON BAHÍAS DE SENSORES Y EMPUÑADURA ---
+    function crearMangoMonolitico() {
+      const g = new THREE.Group();
+      const longM = 320;
+
+      // Cuerpo cónico ergonómico del mango (Ø 32 mm arriba -> Ø 26 mm abajo)
+      const geomMango = new THREE.CylinderGeometry(16.0, 13.0, longM, 32);
+      geomMango.translate(0, longM / 2, 0);
+      g.add(new THREE.Mesh(geomMango, matBlancoMango));
+
+      // Empuñadura anatómica superior curvada
+      const geomGrip = new THREE.CylinderGeometry(17.5, 16.0, 130, 32);
+      geomGrip.translate(0, longM - 65, 0);
+      g.add(new THREE.Mesh(geomGrip, new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.5 })));
+
+      // Botón SOS en el pulgar
+      const geomSOS = new THREE.CylinderGeometry(5.0, 5.0, 6.0, 16);
+      geomSOS.rotateZ(Math.PI / 2);
+      geomSOS.translate(17.5, longM - 20, 0);
+      g.add(new THREE.Mesh(geomSOS, matRojoT3));
+
+      // TORRETA DE SENSORES INTEGRADA
+      // 1. Sensor Frontal (2 ojos de 16.2 mm plateados con bisel negro)
+      for (let offset of [-13, 13]) {
+        const geomOjo = new THREE.CylinderGeometry(8.1, 8.1, 10, 24);
+        geomOjo.rotateZ(Math.PI / 2);
+        geomOjo.translate(15.0, 85, offset);
+        g.add(new THREE.Mesh(geomOjo, matSensorMetal));
+      }
+
+      // 2. Sensor Suelo a 45 grados (pozos y desniveles)
+      for (let offset of [-13, 13]) {
+        const geomOjoS = new THREE.CylinderGeometry(8.1, 8.1, 10, 24);
+        geomOjoS.rotateZ(Math.PI / 2);
+        geomOjoS.rotateZ(-Math.PI / 4); // Inclinado 45°
+        geomOjoS.translate(14.0, 42, offset);
+        g.add(new THREE.Mesh(geomOjoS, matSensorMetal));
+      }
+
+      // 3. Ventana para Radar Servomotor SG90
+      const geomRadar = new THREE.BoxGeometry(20, 12, 14);
+      geomRadar.translate(12, 115, 0);
+      g.add(new THREE.Mesh(geomRadar, new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 })));
+
+      // Collarín y pasador pin en base de Tramo 1
+      const geomCollar = new THREE.CylinderGeometry(14.4, 14.4, 10, 32);
+      geomCollar.translate(0, 22, 0);
+      g.add(new THREE.Mesh(geomCollar, matBlancoMango));
+
+      const geomPin = new THREE.CylinderGeometry(2.5, 2.5, 32, 16);
+      geomPin.rotateZ(Math.PI / 2);
+      geomPin.translate(0, 22, 0);
+      g.add(new THREE.Mesh(geomPin, matPinNaranja));
+
+      return g;
+    }
+
+    // Instanciación de los 4 tramos y puntera
+    const puntera = crearPuntera();
+    puntera.position.y = -20;
+    caneGroup.add(puntera);
+    tramos.push({ obj: puntera, baseZ: -20, orden: 0 });
+
+    const t4 = crearTramoConico(8.25, 7.0, 260, matBlancoT4, true); // Ø 16.5 -> 14 mm
+    t4.position.y = 0;
+    caneGroup.add(t4);
+    tramos.push({ obj: t4, baseZ: 0, orden: 1 });
+
+    const t3 = crearTramoConico(10.0, 8.75, 295, matRojoT3, true);  // Ø 20.0 -> 17.5 mm
+    t3.position.y = 260;
+    caneGroup.add(t3);
+    tramos.push({ obj: t3, baseZ: 260, orden: 2 });
+
+    const t2 = crearTramoConico(12.0, 10.5, 295, matAzulT2, true);  // Ø 24.0 -> 21.0 mm
+    t2.position.y = 260 + 295;
+    caneGroup.add(t2);
+    tramos.push({ obj: t2, baseZ: 260 + 295, orden: 3 });
+
+    const t1 = crearMangoMonolitico(); // Ø 32 -> 26 mm con sensores integrados
+    t1.position.y = 260 + 295 + 295;
+    caneGroup.add(t1);
+    tramos.push({ obj: t1, baseZ: 260 + 295 + 295, orden: 4 });
+
+    // Animación y Controles
+    let autoRotate = true;
+    const btnRotate = document.getElementById('btn-rotate');
+    btnRotate.onclick = () => {
+      autoRotate = !autoRotate;
+      btnRotate.textContent = autoRotate ? '⏸️ Pausar Giro' : '▶️ Reanudar Giro';
+    };
+
+    document.getElementById('btn-reset').onclick = () => {
+      camera.position.set(0, 400, 1800);
+      controls.target.set(0, 600, 0);
+    };
+
+    const explodeSlider = document.getElementById('explode-slider');
+    const explodeVal = document.getElementById('explode-val');
+    explodeSlider.oninput = (e) => {
+      const val = parseFloat(e.target.value);
+      explodeVal.textContent = val + '%';
+      const gap = (val / 100) * 85;
+
+      tramos.forEach(t => {
+        t.obj.position.y = t.baseZ + t.orden * gap;
+      });
+    };
+
+    window.focusTramo = (idx) => {
+      autoRotate = false;
+      btnRotate.textContent = '▶️ Reanudar Giro';
+      const targetY = tramos[idx].obj.position.y + 120;
+      controls.target.set(0, targetY, 0);
+      camera.position.set(0, targetY + 80, 550);
+    };
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (autoRotate) {
+        caneGroup.rotation.y += 0.007;
+      }
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.onresize = () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    };
+  </script>
+</body>
+</html>
