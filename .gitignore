@@ -9,8 +9,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Python Virtual Environments
+venv/
+.venv/
+env/
+
 # OS / Editor temporary files
 .DS_Store
 Thumbs.db
 *.swp
 *~
+*.log
